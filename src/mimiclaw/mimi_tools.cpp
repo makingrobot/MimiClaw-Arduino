@@ -1,0 +1,530 @@
+#include "mimi_tools.h"
+#include "mimi_config.h"
+#include "mimi_cron.h"
+#include <ArduinoJson.h>
+#include <SPIFFS.h>
+#include <HTTPClient.h>
+#include <WiFiClientSecure.h>
+#include <time.h>
+#include <Preferences.h>
+
+static const char* TAG MIMI_TAG_UNUSED = "tools";
+
+// ── Tool Registry Implementation ───────────────────────────────
+
+MimiToolRegistry::MimiToolRegistry() : _toolCount(0) {}
+
+bool MimiToolRegistry::begin(MimiProxy* proxy) {
+    _toolCount = 0;
+    registerBuiltinTools();
+    buildToolsJson();
+    MIMI_LOGI(TAG, "Tool registry initialized (%d tools)", _toolCount);
+    return true;
+}
+
+void MimiToolRegistry::registerTool(const MimiTool* tool) {
+    if (_toolCount >= MAX_TOOLS) {
+        MIMI_LOGE(TAG, "Tool registry full");
+        return;
+    }
+    _tools[_toolCount++] = *tool;
+    MIMI_LOGI(TAG, "Registered tool: %s", tool->name);
+}
+
+void MimiToolRegistry::buildToolsJson() {
+    JsonDocument doc;
+    JsonArray arr = doc.to<JsonArray>();
+
+    for (int i = 0; i < _toolCount; i++) {
+        JsonObject tool = arr.add<JsonObject>();
+        tool["name"] = _tools[i].name;
+        tool["description"] = _tools[i].description;
+        
+        JsonDocument schemaDoc;
+        deserializeJson(schemaDoc, _tools[i].input_schema_json);
+        tool["input_schema"] = schemaDoc.as<JsonObject>();
+    }
+
+    _toolsJson = "";
+    serializeJson(arr, _toolsJson);
+    MIMI_LOGI(TAG, "Tools JSON built (%d tools)", _toolCount);
+}
+
+const char* MimiToolRegistry::getToolsJson() {
+    return _toolsJson.c_str();
+}
+
+bool MimiToolRegistry::execute(const char* name, const char* input_json, char* output, size_t output_size) {
+    for (int i = 0; i < _toolCount; i++) {
+        if (strcmp(_tools[i].name, name) == 0) {
+            MIMI_LOGI(TAG, "Executing tool: %s", name);
+            return _tools[i].execute(input_json, output, output_size);
+        }
+    }
+    MIMI_LOGW(TAG, "Unknown tool: %s", name);
+    snprintf(output, output_size, "Error: unknown tool '%s'", name);
+    return false;
+}
+
+void MimiToolRegistry::registerBuiltinTools() {
+    tool_web_search_init();
+
+    // web_search
+    static const MimiTool ws = {
+        "web_search",
+        "Search the web for current information. Use this when you need up-to-date facts, news, weather, or anything beyond your training data.",
+        "{\"type\":\"object\",\"properties\":{\"query\":{\"type\":\"string\",\"description\":\"The search query\"}},\"required\":[\"query\"]}",
+        tool_web_search_execute
+    };
+    registerTool(&ws);
+
+    // get_current_time
+    static const MimiTool gt = {
+        "get_current_time",
+        "Get the current date and time. Also sets the system clock. Call this when you need to know what time or date it is.",
+        "{\"type\":\"object\",\"properties\":{},\"required\":[]}",
+        tool_get_time_execute
+    };
+    registerTool(&gt);
+
+    // read_file
+    static const MimiTool rf = {
+        "read_file",
+        "Read a file from SPIFFS storage. Path must start with " MIMI_SPIFFS_BASE "/.",
+        "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"Absolute path starting with " MIMI_SPIFFS_BASE "/\"}},\"required\":[\"path\"]}",
+        tool_read_file_execute
+    };
+    registerTool(&rf);
+
+    // write_file
+    static const MimiTool wf = {
+        "write_file",
+        "Write or overwrite a file on SPIFFS storage. Path must start with " MIMI_SPIFFS_BASE "/.",
+        "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"Absolute path starting with " MIMI_SPIFFS_BASE "/\"},\"content\":{\"type\":\"string\",\"description\":\"File content to write\"}},\"required\":[\"path\",\"content\"]}",
+        tool_write_file_execute
+    };
+    registerTool(&wf);
+
+    // edit_file
+    static const MimiTool ef = {
+        "edit_file",
+        "Find and replace text in a file on SPIFFS. Replaces first occurrence of old_string with new_string.",
+        "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"Absolute path starting with " MIMI_SPIFFS_BASE "/\"},\"old_string\":{\"type\":\"string\",\"description\":\"Text to find\"},\"new_string\":{\"type\":\"string\",\"description\":\"Replacement text\"}},\"required\":[\"path\",\"old_string\",\"new_string\"]}",
+        tool_edit_file_execute
+    };
+    registerTool(&ef);
+
+    // list_dir
+    static const MimiTool ld = {
+        "list_dir",
+        "List files on SPIFFS storage, optionally filtered by path prefix.",
+        "{\"type\":\"object\",\"properties\":{\"prefix\":{\"type\":\"string\",\"description\":\"Optional path prefix filter\"}},\"required\":[]}",
+        tool_list_dir_execute
+    };
+    registerTool(&ld);
+
+    // cron_add
+    static const MimiTool ca = {
+        "cron_add",
+        "Schedule a recurring or one-shot task. The message will trigger an agent turn when the job fires.",
+        "{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\",\"description\":\"Short name for the job\"},\"schedule_type\":{\"type\":\"string\",\"description\":\"'every' for recurring or 'at' for one-shot\"},\"interval_s\":{\"type\":\"integer\",\"description\":\"Interval in seconds (for 'every')\"},\"at_epoch\":{\"type\":\"integer\",\"description\":\"Unix timestamp (for 'at')\"},\"message\":{\"type\":\"string\",\"description\":\"Message to inject when the job fires\"},\"channel\":{\"type\":\"string\",\"description\":\"Reply channel\"},\"chat_id\":{\"type\":\"string\",\"description\":\"Reply chat_id\"}},\"required\":[\"name\",\"schedule_type\",\"message\"]}",
+        tool_cron_add_execute
+    };
+    registerTool(&ca);
+
+    // cron_list
+    static const MimiTool cl = {
+        "cron_list",
+        "List all scheduled cron jobs with their status, schedule, and IDs.",
+        "{\"type\":\"object\",\"properties\":{},\"required\":[]}",
+        tool_cron_list_execute
+    };
+    registerTool(&cl);
+
+    // cron_remove
+    static const MimiTool cr = {
+        "cron_remove",
+        "Remove a scheduled cron job by its ID.",
+        "{\"type\":\"object\",\"properties\":{\"job_id\":{\"type\":\"string\",\"description\":\"The 8-character job ID to remove\"}},\"required\":[\"job_id\"]}",
+        tool_cron_remove_execute
+    };
+    registerTool(&cr);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// Built-in Tool Implementations
+// ══════════════════════════════════════════════════════════════════
+
+// ── Web Search (Brave Search API) ──────────────────────────────
+
+static char s_search_key[128] = {0};
+
+static size_t url_encode(const char* src, char* dst, size_t dst_size) {
+    static const char hex[] = "0123456789ABCDEF";
+    size_t pos = 0;
+    for (; *src && pos < dst_size - 3; src++) {
+        unsigned char c = (unsigned char)*src;
+        if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
+            (c >= '0' && c <= '9') || c == '-' || c == '_' || c == '.' || c == '~') {
+            dst[pos++] = c;
+        } else if (c == ' ') {
+            dst[pos++] = '+';
+        } else {
+            dst[pos++] = '%';
+            dst[pos++] = hex[c >> 4];
+            dst[pos++] = hex[c & 0x0F];
+        }
+    }
+    dst[pos] = '\0';
+    return pos;
+}
+
+void tool_web_search_init() {
+    Preferences prefs;
+    prefs.begin(MIMI_PREF_SEARCH, true);
+    String key = prefs.getString("api_key", "");
+    prefs.end();
+    if (!key.isEmpty()) {
+        strncpy(s_search_key, key.c_str(), sizeof(s_search_key) - 1);
+    }
+}
+
+void tool_web_search_set_key(const char* key) {
+    strncpy(s_search_key, key, sizeof(s_search_key) - 1);
+    Preferences prefs;
+    prefs.begin(MIMI_PREF_SEARCH, false);
+    prefs.putString("api_key", key);
+    prefs.end();
+    MIMI_LOGI(TAG, "Search API key saved");
+}
+
+bool tool_web_search_execute(const char* input_json, char* output, size_t output_size) {
+    if (s_search_key[0] == '\0') {
+        snprintf(output, output_size, "Error: No search API key configured");
+        return false;
+    }
+
+    JsonDocument doc;
+    if (deserializeJson(doc, input_json)) {
+        snprintf(output, output_size, "Error: Invalid input JSON");
+        return false;
+    }
+
+    const char* query = doc["query"] | "";
+    if (!query[0]) {
+        snprintf(output, output_size, "Error: Missing 'query' field");
+        return false;
+    }
+
+    MIMI_LOGI(TAG, "Searching: %s", query);
+
+    char encoded[256];
+    url_encode(query, encoded, sizeof(encoded));
+
+    String url = "https://api.search.brave.com/res/v1/web/search?q=" + String(encoded) + "&count=5";
+
+    WiFiClientSecure* client = new WiFiClientSecure();
+    client->setInsecure();
+
+    HTTPClient http;
+    http.setTimeout(15000);
+    if (!http.begin(*client, url)) {
+        delete client;
+        snprintf(output, output_size, "Error: HTTP begin failed");
+        return false;
+    }
+
+    http.addHeader("Accept", "application/json");
+    http.addHeader("X-Subscription-Token", s_search_key);
+
+    int httpCode = http.GET();
+    if (httpCode != 200) {
+        snprintf(output, output_size, "Error: Search API returned %d", httpCode);
+        http.end();
+        delete client;
+        return false;
+    }
+
+    String body = http.getString();
+    http.end();
+    delete client;
+
+    // Parse and format results
+    JsonDocument respDoc;
+    if (deserializeJson(respDoc, body)) {
+        snprintf(output, output_size, "Error: Failed to parse search results");
+        return false;
+    }
+
+    JsonArray results = respDoc["web"]["results"].as<JsonArray>();
+    if (results.isNull() || results.size() == 0) {
+        snprintf(output, output_size, "No web results found.");
+        return true;
+    }
+
+    size_t off = 0;
+    int idx = 0;
+    for (JsonVariant item : results) {
+        if (idx >= 5) break;
+        off += snprintf(output + off, output_size - off,
+            "%d. %s\n   %s\n   %s\n\n",
+            idx + 1,
+            item["title"] | "(no title)",
+            item["url"] | "",
+            item["description"] | "");
+        if (off >= output_size - 1) break;
+        idx++;
+    }
+    return true;
+}
+
+// ── Get Current Time ───────────────────────────────────────────
+
+static const char* MONTHS[] = {
+    "Jan","Feb","Mar","Apr","May","Jun",
+    "Jul","Aug","Sep","Oct","Nov","Dec"
+};
+
+static bool parseAndSetTime(const char* dateStr, char* out, size_t outSize) {
+    int day, year, hour, min, sec;
+    char monStr[4] = {0};
+
+    if (sscanf(dateStr, "%*[^,], %d %3s %d %d:%d:%d",
+               &day, monStr, &year, &hour, &min, &sec) != 6)
+        return false;
+
+    int mon = -1;
+    for (int i = 0; i < 12; i++) {
+        if (strcmp(monStr, MONTHS[i]) == 0) { mon = i; break; }
+    }
+    if (mon < 0) return false;
+
+    struct tm tm;
+    memset(&tm, 0, sizeof(tm));
+    tm.tm_sec = sec; tm.tm_min = min; tm.tm_hour = hour;
+    tm.tm_mday = day; tm.tm_mon = mon; tm.tm_year = year - 1900;
+
+    setenv("TZ", "UTC0", 1);
+    tzset();
+    time_t t = mktime(&tm);
+
+    setenv("TZ", MIMI_TIMEZONE, 1);
+    tzset();
+
+    if (t < 0) return false;
+
+    struct timeval tv = { .tv_sec = t, .tv_usec = 0 };
+    settimeofday(&tv, NULL);
+
+    struct tm local;
+    localtime_r(&t, &local);
+    strftime(out, outSize, "%Y-%m-%d %H:%M:%S %Z (%A)", &local);
+    return true;
+}
+
+bool tool_get_time_execute(const char* input_json, char* output, size_t output_size) {
+    MIMI_LOGI(TAG, "Fetching current time...");
+
+    WiFiClientSecure* client = new WiFiClientSecure();
+    client->setInsecure();
+
+    HTTPClient http;
+    http.setTimeout(10000);
+    
+    if (!http.begin(*client, "https://api.telegram.org/")) {
+        delete client;
+        snprintf(output, output_size, "Error: failed to connect");
+        return false;
+    }
+
+    // Collect headers
+    const char* headerKeys[] = {"Date"};
+    http.collectHeaders(headerKeys, 1);
+    
+    int httpCode = http.sendRequest("HEAD");
+    
+    if (httpCode <= 0) {
+        snprintf(output, output_size, "Error: HTTP request failed");
+        http.end();
+        delete client;
+        return false;
+    }
+
+    String dateVal = http.header("Date");
+    http.end();
+    delete client;
+
+    if (dateVal.isEmpty()) {
+        snprintf(output, output_size, "Error: No Date header in response");
+        return false;
+    }
+
+    if (!parseAndSetTime(dateVal.c_str(), output, output_size)) {
+        snprintf(output, output_size, "Error: Failed to parse date: %s", dateVal.c_str());
+        return false;
+    }
+
+    MIMI_LOGI(TAG, "Time: %s", output);
+    return true;
+}
+
+// ── File Tools ─────────────────────────────────────────────────
+
+static bool validatePath(const char* path) {
+    if (!path) return false;
+    size_t baseLen = strlen(MIMI_SPIFFS_BASE);
+    if (strncmp(path, MIMI_SPIFFS_BASE, baseLen) != 0) return false;
+    if (baseLen > 0 && MIMI_SPIFFS_BASE[baseLen - 1] != '/') {
+        if (path[baseLen] != '/') return false;
+    }
+    if (strstr(path, "..") != NULL) return false;
+    return true;
+}
+
+bool tool_read_file_execute(const char* input_json, char* output, size_t output_size) {
+    JsonDocument doc;
+    if (deserializeJson(doc, input_json)) {
+        snprintf(output, output_size, "Error: invalid JSON input");
+        return false;
+    }
+
+    const char* path = doc["path"] | "";
+    if (!validatePath(path)) {
+        snprintf(output, output_size, "Error: path must start with %s/", MIMI_SPIFFS_BASE);
+        return false;
+    }
+
+    File f = SPIFFS.open(path, "r");
+    if (!f) {
+        snprintf(output, output_size, "Error: file not found: %s", path);
+        return false;
+    }
+
+    size_t maxRead = output_size - 1;
+    if (maxRead > 32768) maxRead = 32768;
+    size_t n = f.readBytes(output, maxRead);
+    output[n] = '\0';
+    f.close();
+
+    MIMI_LOGI(TAG, "read_file: %s (%d bytes)", path, (int)n);
+    return true;
+}
+
+bool tool_write_file_execute(const char* input_json, char* output, size_t output_size) {
+    JsonDocument doc;
+    if (deserializeJson(doc, input_json)) {
+        snprintf(output, output_size, "Error: invalid JSON input");
+        return false;
+    }
+
+    const char* path = doc["path"] | "";
+    const char* content = doc["content"] | (const char*)nullptr;
+
+    if (!validatePath(path)) {
+        snprintf(output, output_size, "Error: path must start with %s/", MIMI_SPIFFS_BASE);
+        return false;
+    }
+    if (!content) {
+        snprintf(output, output_size, "Error: missing 'content' field");
+        return false;
+    }
+
+    File f = SPIFFS.open(path, "w");
+    if (!f) {
+        snprintf(output, output_size, "Error: cannot open file: %s", path);
+        return false;
+    }
+
+    size_t written = f.print(content);
+    f.close();
+
+    snprintf(output, output_size, "OK: wrote %d bytes to %s", (int)written, path);
+    MIMI_LOGI(TAG, "write_file: %s (%d bytes)", path, (int)written);
+    return true;
+}
+
+bool tool_edit_file_execute(const char* input_json, char* output, size_t output_size) {
+    JsonDocument doc;
+    if (deserializeJson(doc, input_json)) {
+        snprintf(output, output_size, "Error: invalid JSON input");
+        return false;
+    }
+
+    const char* path = doc["path"] | "";
+    const char* oldStr = doc["old_string"] | (const char*)nullptr;
+    const char* newStr = doc["new_string"] | (const char*)nullptr;
+
+    if (!validatePath(path)) {
+        snprintf(output, output_size, "Error: path must start with %s/", MIMI_SPIFFS_BASE);
+        return false;
+    }
+    if (!oldStr || !newStr) {
+        snprintf(output, output_size, "Error: missing old_string or new_string");
+        return false;
+    }
+
+    File f = SPIFFS.open(path, "r");
+    if (!f) {
+        snprintf(output, output_size, "Error: file not found: %s", path);
+        return false;
+    }
+
+    String fileContent = f.readString();
+    f.close();
+
+    int pos = fileContent.indexOf(oldStr);
+    if (pos < 0) {
+        snprintf(output, output_size, "Error: old_string not found in %s", path);
+        return false;
+    }
+
+    String result = fileContent.substring(0, pos) + String(newStr) + fileContent.substring(pos + strlen(oldStr));
+
+    f = SPIFFS.open(path, "w");
+    if (!f) {
+        snprintf(output, output_size, "Error: cannot write file: %s", path);
+        return false;
+    }
+    f.print(result);
+    f.close();
+
+    snprintf(output, output_size, "OK: edited %s (replaced %d bytes with %d bytes)",
+             path, (int)strlen(oldStr), (int)strlen(newStr));
+    MIMI_LOGI(TAG, "edit_file: %s", path);
+    return true;
+}
+
+bool tool_list_dir_execute(const char* input_json, char* output, size_t output_size) {
+    JsonDocument doc;
+    deserializeJson(doc, input_json);
+    const char* prefix = doc["prefix"] | (const char*)nullptr;
+
+    File root = SPIFFS.open("/");
+    if (!root) {
+        snprintf(output, output_size, "Error: cannot open SPIFFS");
+        return false;
+    }
+
+    size_t off = 0;
+    int count = 0;
+    File file = root.openNextFile();
+    while (file && off < output_size - 1) {
+        String fullPath = String(file.name());
+        // SPIFFS paths may or may not include leading /
+        if (!fullPath.startsWith("/")) fullPath = "/" + fullPath;
+        String spiffsPath = String(MIMI_SPIFFS_BASE) + fullPath;
+        
+        if (prefix && strncmp(spiffsPath.c_str(), prefix, strlen(prefix)) != 0) {
+            file = root.openNextFile();
+            continue;
+        }
+
+        off += snprintf(output + off, output_size - off, "%s\n", spiffsPath.c_str());
+        count++;
+        file = root.openNextFile();
+    }
+
+    if (count == 0) snprintf(output, output_size, "(no files found)");
+    MIMI_LOGI(TAG, "list_dir: %d files", count);
+    return true;
+}
