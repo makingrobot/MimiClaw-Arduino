@@ -4,6 +4,7 @@
 #include <ArduinoJson.h>
 #include <time.h>
 #include <esp_random.h>
+#include "arduino_json_psram.h"
 
 static const char* TAG MIMI_TAG_UNUSED = "cron";
 
@@ -62,7 +63,7 @@ bool MimiCron::loadJobs() {
     String content = f.readString();
     f.close();
 
-    JsonDocument doc;
+    JsonDocument doc(&spiram_allocator);
     if (deserializeJson(doc, content)) {
         MIMI_LOGW(TAG, "Failed to parse cron JSON");
         _jobCount = 0;
@@ -114,7 +115,7 @@ bool MimiCron::loadJobs() {
 }
 
 bool MimiCron::saveJobs() {
-    JsonDocument doc;
+    JsonDocument doc(&spiram_allocator);
     JsonArray jobsArr = doc["jobs"].to<JsonArray>();
 
     for (int i = 0; i < _jobCount; i++) {
@@ -289,7 +290,7 @@ bool tool_cron_add_execute(const char* input_json, char* output, size_t output_s
         return false;
     }
 
-    JsonDocument doc;
+    JsonDocument doc(&spiram_allocator);
     if (deserializeJson(doc, input_json)) {
         snprintf(output, output_size, "Error: invalid JSON input");
         return false;
@@ -401,7 +402,7 @@ bool tool_cron_remove_execute(const char* input_json, char* output, size_t outpu
         return false;
     }
 
-    JsonDocument doc;
+    JsonDocument doc(&spiram_allocator);
     if (deserializeJson(doc, input_json)) {
         snprintf(output, output_size, "Error: invalid JSON input");
         return false;

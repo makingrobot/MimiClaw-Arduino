@@ -1,6 +1,7 @@
 #include "mimi_ws.h"
 #include "mimi_config.h"
 #include <ArduinoJson.h>
+#include "arduino_json_psram.h"
 
 static const char* TAG MIMI_TAG_UNUSED = "ws";
 
@@ -69,7 +70,7 @@ void MimiWS::onEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length
             break;
 
         case WStype_TEXT: {
-            JsonDocument doc;
+            JsonDocument doc(&spiram_allocator);
             if (deserializeJson(doc, payload, length)) {
                 MIMI_LOGW(TAG, "Invalid JSON from ws_%d", num);
                 break;
@@ -119,7 +120,7 @@ bool MimiWS::send(const char* chat_id, const char* text) {
         return false;
     }
 
-    JsonDocument doc;
+    JsonDocument doc(&spiram_allocator);
     doc["type"] = "response";
     doc["content"] = text;
     doc["chat_id"] = chat_id;

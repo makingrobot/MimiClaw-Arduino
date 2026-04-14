@@ -5,6 +5,7 @@
 #include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
 #include <Preferences.h>
+#include "arduino_json_psram.h"
 
 static const char* TAG MIMI_TAG_UNUSED = "telegram";
 
@@ -152,7 +153,7 @@ String MimiTelegram::apiCall(const char* method, const char* postData) {
 bool MimiTelegram::responseIsOk(const String& resp) {
     if (resp.length() == 0) return false;
 
-    JsonDocument doc;
+    JsonDocument doc(&spiram_allocator);
     if (deserializeJson(doc, resp) == DeserializationError::Ok) {
         return doc["ok"] | false;
     }
@@ -162,7 +163,7 @@ bool MimiTelegram::responseIsOk(const String& resp) {
 }
 
 void MimiTelegram::processUpdates(const String& json) {
-    JsonDocument doc;
+    JsonDocument doc(&spiram_allocator);
     if (deserializeJson(doc, json)) return;
     if (!(doc["ok"] | false)) return;
 
@@ -221,7 +222,7 @@ void MimiTelegram::processUpdates(const String& json) {
 }
 
 bool MimiTelegram::sendChunk(const char* chatId, const char* text, size_t len, bool useMarkdown) {
-    JsonDocument doc;
+    JsonDocument doc(&spiram_allocator);
     doc["chat_id"] = chatId;
 
     // Create segment string

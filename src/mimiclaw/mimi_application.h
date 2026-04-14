@@ -71,6 +71,10 @@ public:
     bool isWiFiConnected();
     const char* getIP();
     
+    bool pushMessage(const MimiMsg* msg) {
+        return _bus.pushInbound(msg);
+    }
+
     // --- Memory ---
     MimiMemory& memory() { return _memory; }
     MimiSession& session() { return _session; }

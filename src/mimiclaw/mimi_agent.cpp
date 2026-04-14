@@ -2,6 +2,7 @@
 #include "mimi_config.h"
 #include <ArduinoJson.h>
 #include <esp_heap_caps.h>
+#include "arduino_json_psram.h"
 
 static const char* TAG MIMI_TAG_UNUSED = "agent";
 #define TOOL_OUTPUT_SIZE  (8 * 1024)
@@ -42,7 +43,7 @@ void MimiAgent::appendTurnContext(char* prompt, size_t size, const MimiMsg* msg)
 static String patchCronInput(const LlmToolCall* call, const MimiMsg* msg) {
     if (!call || !msg || strcmp(call->name, "cron_add") != 0) return "";
 
-    JsonDocument doc;
+    JsonDocument doc(&spiram_allocator);
     if (deserializeJson(doc, call->input ? call->input : "{}")) {
         doc.clear();
     }
@@ -89,7 +90,7 @@ void MimiAgent::processMessage(MimiMsg* msg, char* systemPrompt, char* toolOutpu
     appendTurnContext(systemPrompt, MIMI_CONTEXT_BUF_SIZE, msg);
 
     // 2. Load session history
-    JsonDocument historyDoc;
+    JsonDocument historyDoc(&spiram_allocator);
     JsonArray messages = historyDoc.to<JsonArray>();
     _session->getHistoryJson(msg->chat_id, messages, MIMI_AGENT_MAX_HISTORY);
 
@@ -162,7 +163,7 @@ void MimiAgent::processMessage(MimiMsg* msg, char* systemPrompt, char* toolOutpu
             toolBlock["name"] = call->name;
 
             // Parse input as JSON object
-            JsonDocument inputDoc;
+            JsonDocument inputDoc(&spiram_allocator);
             if (call->input && deserializeJson(inputDoc, call->input) == DeserializationError::Ok) {
                 toolBlock["input"] = inputDoc.as<JsonVariant>();
             } else {

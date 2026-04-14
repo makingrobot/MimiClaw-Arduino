@@ -2,6 +2,7 @@
 #include "mimi_config.h"
 #include <SPIFFS.h>
 #include <time.h>
+#include "arduino_json_psram.h"
 
 static const char* TAG MIMI_TAG_UNUSED = "session";
 
@@ -24,7 +25,7 @@ bool MimiSession::append(const char* chat_id, const char* role, const char* cont
         return false;
     }
 
-    JsonDocument doc;
+    JsonDocument doc(&spiram_allocator);
     doc["role"] = role;
     doc["content"] = content;
     doc["ts"] = (double)time(NULL);
@@ -59,7 +60,7 @@ bool MimiSession::getHistoryJson(const char* chat_id, char* buf, size_t size, in
         line.trim();
         if (line.isEmpty()) continue;
 
-        JsonDocument lineDoc;
+        JsonDocument lineDoc(&spiram_allocator);
         if (deserializeJson(lineDoc, line)) continue;
 
         if (count >= maxMsgs) {
@@ -73,7 +74,7 @@ bool MimiSession::getHistoryJson(const char* chat_id, char* buf, size_t size, in
     f.close();
 
     // Build JSON array
-    JsonDocument arrDoc;
+    JsonDocument arrDoc(&spiram_allocator);
     JsonArray arr = arrDoc.to<JsonArray>();
     
     int start = (count < maxMsgs) ? 0 : writeIdx;
@@ -112,7 +113,7 @@ bool MimiSession::getHistoryJson(const char* chat_id, JsonArray& arr, int maxMsg
         line.trim();
         if (line.isEmpty()) continue;
 
-        JsonDocument lineDoc;
+        JsonDocument lineDoc(&spiram_allocator);
         if (deserializeJson(lineDoc, line)) continue;
 
         msgs[writeIdx].role = lineDoc["role"].as<String>();

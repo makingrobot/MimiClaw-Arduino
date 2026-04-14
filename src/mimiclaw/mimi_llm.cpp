@@ -3,6 +3,7 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
+#include "arduino_json_psram.h"
 
 static const char* TAG MIMI_TAG_UNUSED = "llm";
 
@@ -118,7 +119,7 @@ const char* MimiLLM::apiPath() {
 }
 
 String MimiLLM::buildRequestBody(const char* system_prompt, JsonArray messages, const char* tools_json) {
-    JsonDocument doc;
+    JsonDocument doc(&spiram_allocator);
     doc["model"] = _model;
 
     if (isOpenAI()) {
@@ -199,7 +200,7 @@ String MimiLLM::buildRequestBody(const char* system_prompt, JsonArray messages, 
 
         // Convert tools to OpenAI format
         if (tools_json) {
-            JsonDocument toolsDoc;
+            JsonDocument toolsDoc(&spiram_allocator);
             deserializeJson(toolsDoc, tools_json);
             if (toolsDoc.is<JsonArray>()) {
                 JsonArray toolsArr = doc["tools"].to<JsonArray>();
@@ -229,7 +230,7 @@ String MimiLLM::buildRequestBody(const char* system_prompt, JsonArray messages, 
 
         // Add tools
         if (tools_json) {
-            JsonDocument toolsDoc;
+            JsonDocument toolsDoc(&spiram_allocator);
             deserializeJson(toolsDoc, tools_json);
             if (toolsDoc.is<JsonArray>()) {
                 doc["tools"] = toolsDoc.as<JsonArray>();
@@ -250,7 +251,10 @@ String MimiLLM::httpDirect(const String& postData) {
     http.setTimeout(60000);
     http.setReuse(false);
 
-    if (!http.begin(*client, apiUrl())) {
+    const char *url = apiUrl();
+    MIMI_LOGI(TAG, "access url: %s", url);
+
+    if (!http.begin(*client, url)) {
         MIMI_LOGE(TAG, "HTTP begin failed");
         delete client;
         return "";
@@ -275,7 +279,7 @@ String MimiLLM::httpDirect(const String& postData) {
             response = "";
         }
     } else {
-        MIMI_LOGE(TAG, "HTTP request failed: %s", http.errorToString(httpCode).c_str());
+        MIMI_LOGE(TAG, "HTTP request failed: [%d]%s", httpCode, http.errorToString(httpCode).c_str());
     }
 
     http.end();
@@ -405,7 +409,7 @@ bool MimiLLM::chatWithTools(const char* system_prompt, JsonArray messages,
 }
 
 bool MimiLLM::parseAnthropicResponse(const String& body, LlmResponse* resp) {
-    JsonDocument doc;
+    JsonDocument doc(&spiram_allocator);
     DeserializationError err = deserializeJson(doc, body);
     if (err) {
         MIMI_LOGE(TAG, "JSON parse error: %s", err.c_str());
@@ -456,7 +460,7 @@ bool MimiLLM::parseAnthropicResponse(const String& body, LlmResponse* resp) {
 }
 
 bool MimiLLM::parseOpenAIResponse(const String& body, LlmResponse* resp) {
-    JsonDocument doc;
+    JsonDocument doc(&spiram_allocator);
     DeserializationError err = deserializeJson(doc, body);
     if (err) {
         MIMI_LOGE(TAG, "JSON parse error: %s", err.c_str());

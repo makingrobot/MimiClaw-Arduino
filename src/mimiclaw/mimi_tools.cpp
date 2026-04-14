@@ -7,6 +7,7 @@
 #include <WiFiClientSecure.h>
 #include <time.h>
 #include <Preferences.h>
+#include "arduino_json_psram.h"
 
 static const char* TAG MIMI_TAG_UNUSED = "tools";
 
@@ -32,7 +33,7 @@ void MimiToolRegistry::registerTool(const MimiTool* tool) {
 }
 
 void MimiToolRegistry::buildToolsJson() {
-    JsonDocument doc;
+    JsonDocument doc(&spiram_allocator);
     JsonArray arr = doc.to<JsonArray>();
 
     for (int i = 0; i < _toolCount; i++) {
@@ -40,7 +41,7 @@ void MimiToolRegistry::buildToolsJson() {
         tool["name"] = _tools[i].name;
         tool["description"] = _tools[i].description;
         
-        JsonDocument schemaDoc;
+        JsonDocument schemaDoc(&spiram_allocator);
         deserializeJson(schemaDoc, _tools[i].input_schema_json);
         tool["input_schema"] = schemaDoc.as<JsonObject>();
     }
@@ -204,7 +205,7 @@ bool tool_web_search_execute(const char* input_json, char* output, size_t output
         return false;
     }
 
-    JsonDocument doc;
+    JsonDocument doc(&spiram_allocator);
     if (deserializeJson(doc, input_json)) {
         snprintf(output, output_size, "Error: Invalid input JSON");
         return false;
@@ -250,7 +251,7 @@ bool tool_web_search_execute(const char* input_json, char* output, size_t output
     delete client;
 
     // Parse and format results
-    JsonDocument respDoc;
+    JsonDocument respDoc(&spiram_allocator);
     if (deserializeJson(respDoc, body)) {
         snprintf(output, output_size, "Error: Failed to parse search results");
         return false;
@@ -382,7 +383,7 @@ static bool validatePath(const char* path) {
 }
 
 bool tool_read_file_execute(const char* input_json, char* output, size_t output_size) {
-    JsonDocument doc;
+    JsonDocument doc(&spiram_allocator);
     if (deserializeJson(doc, input_json)) {
         snprintf(output, output_size, "Error: invalid JSON input");
         return false;
@@ -411,7 +412,7 @@ bool tool_read_file_execute(const char* input_json, char* output, size_t output_
 }
 
 bool tool_write_file_execute(const char* input_json, char* output, size_t output_size) {
-    JsonDocument doc;
+    JsonDocument doc(&spiram_allocator);
     if (deserializeJson(doc, input_json)) {
         snprintf(output, output_size, "Error: invalid JSON input");
         return false;
@@ -444,7 +445,7 @@ bool tool_write_file_execute(const char* input_json, char* output, size_t output
 }
 
 bool tool_edit_file_execute(const char* input_json, char* output, size_t output_size) {
-    JsonDocument doc;
+    JsonDocument doc(&spiram_allocator);
     if (deserializeJson(doc, input_json)) {
         snprintf(output, output_size, "Error: invalid JSON input");
         return false;
@@ -495,7 +496,7 @@ bool tool_edit_file_execute(const char* input_json, char* output, size_t output_
 }
 
 bool tool_list_dir_execute(const char* input_json, char* output, size_t output_size) {
-    JsonDocument doc;
+    JsonDocument doc(&spiram_allocator);
     deserializeJson(doc, input_json);
     const char* prefix = doc["prefix"] | (const char*)nullptr;
 

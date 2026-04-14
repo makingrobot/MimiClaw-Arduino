@@ -12,7 +12,7 @@
 
 Log::Level Log::level = Log::WARN;
 
-const int LOG_BUFFER_LEN = 512;
+const int LOG_BUFFER_LEN = 128;
 
 void Log::Info(const char* tag, const char* format, ...) {
     if (Log::level >= Log::INFO)
