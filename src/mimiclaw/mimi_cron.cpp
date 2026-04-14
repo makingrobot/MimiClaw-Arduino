@@ -37,6 +37,13 @@ bool MimiCron::sanitizeDestination(CronJob* job) {
             strncpy(job->chat_id, "cron", sizeof(job->chat_id) - 1);
             changed = true;
         }
+    } else if (strcmp(job->channel, MIMI_CHAN_FEISHU) == 0) {
+        if (job->chat_id[0] == '\0' || strcmp(job->chat_id, "cron") == 0) {
+            MIMI_LOGW(TAG, "Cron job %s has invalid feishu chat_id, fallback to system:cron", job->id);
+            strncpy(job->channel, MIMI_CHAN_SYSTEM, sizeof(job->channel) - 1);
+            strncpy(job->chat_id, "cron", sizeof(job->chat_id) - 1);
+            changed = true;
+        }
     } else if (job->chat_id[0] == '\0') {
         strncpy(job->chat_id, "cron", sizeof(job->chat_id) - 1);
         changed = true;
@@ -310,6 +317,10 @@ bool tool_cron_add_execute(const char* input_json, char* output, size_t output_s
     if (strcmp(job.channel, MIMI_CHAN_TELEGRAM) == 0 &&
         (job.chat_id[0] == '\0' || strcmp(job.chat_id, "cron") == 0)) {
         snprintf(output, output_size, "Error: channel='telegram' requires a valid chat_id");
+        return false;
+    } else if(strcmp(job.channel, MIMI_CHAN_FEISHU) == 0 &&
+        (job.chat_id[0] == '\0' || strcmp(job.chat_id, "cron") == 0)) {
+        snprintf(output, output_size, "Error: channel='feishu' requires a valid chat_id");
         return false;
     }
 

@@ -12,19 +12,21 @@
 
 Log::Level Log::level = Log::WARN;
 
+const int LOG_BUFFER_LEN = 512;
+
 void Log::Info(const char* tag, const char* format, ...) {
     if (Log::level >= Log::INFO)
     {
         va_list args;
         va_start(args, format);
-        char buffer[128] = { 0 };
-        vsnprintf(buffer, 127, format, args);
+        char buffer[LOG_BUFFER_LEN] = { 0 };
+        vsnprintf(buffer, LOG_BUFFER_LEN-1, format, args);
         va_end(args);
 
 #if CONFIG_USE_ESP_LOG==1
-        log_i("[I]%s %s", tag, buffer);
+        log_i("%s %s", tag, buffer);
 #else
-        Serial.printf("%d [I][%s] %s\n", millis(), tag, buffer);
+        Serial.printf("I %d [%s] %s\n", millis(), tag, buffer);
 #endif
     }
 }
@@ -34,14 +36,14 @@ void Log::Warn(const char* tag, const char* format, ...) {
     {
         va_list args;
         va_start(args, format);
-        char buffer[128] = { 0 };
-        vsnprintf(buffer, 127, format, args);
+        char buffer[LOG_BUFFER_LEN] = { 0 };
+        vsnprintf(buffer, LOG_BUFFER_LEN-1, format, args);
         va_end(args);
 
 #if CONFIG_USE_ESP_LOG==1
-        log_w("[W]%s %s", tag, buffer);
+        log_w("%s %s", tag, buffer);
 #else
-        Serial.printf("%d [W][%s] %s\n", millis(), tag, buffer);
+        Serial.printf("W %d [%s] %s\n", millis(), tag, buffer);
 #endif
     }
 }
@@ -51,14 +53,14 @@ void Log::Debug(const char* tag, const char* format, ...) {
     {
         va_list args;
         va_start(args, format);
-        char buffer[128] = { 0 };
-        vsnprintf(buffer, 127, format, args);
+        char buffer[LOG_BUFFER_LEN] = { 0 };
+        vsnprintf(buffer, LOG_BUFFER_LEN-1, format, args);
         va_end(args);
 
 #if CONFIG_USE_ESP_LOG==1
-        log_d("[D]%s %s", tag, buffer);
+        log_d("%s %s", tag, buffer);
 #else
-        Serial.printf("%d [D][%s] %s\n", millis(), tag, buffer);
+        Serial.printf("D %d [%s] %s\n", millis(), tag, buffer);
 #endif
     }
 }
@@ -68,14 +70,14 @@ void Log::Error(const char* tag, const char* format, ...) {
     {
         va_list args;
         va_start(args, format);
-        char buffer[128] = { 0 };
-        vsnprintf(buffer, 127, format, args);
+        char buffer[LOG_BUFFER_LEN] = { 0 };
+        vsnprintf(buffer, LOG_BUFFER_LEN-1, format, args);
         va_end(args);
 
 #if CONFIG_USE_ESP_LOG==1
-        log_e("[E]%s %s", tag, buffer);
+        log_e("%s %s", tag, buffer);
 #else
-        Serial.printf("%d [E][%s] %s\n", millis(), tag, buffer);
+        Serial.printf("E %d [%s] %s\n", millis(), tag, buffer);
 #endif
     }
 }

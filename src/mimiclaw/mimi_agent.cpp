@@ -63,6 +63,13 @@ static String patchCronInput(const LlmToolCall* call, const MimiMsg* msg) {
             doc["chat_id"] = msg->chat_id;
             changed = true;
         }
+    } else if (channel && strcmp(channel, MIMI_CHAN_FEISHU) == 0 &&
+        strcmp(msg->channel, MIMI_CHAN_FEISHU) == 0 && msg->chat_id[0] != '\0') {
+        const char* chatId = doc["chat_id"] | (const char*)nullptr;
+        if (!chatId || chatId[0] == '\0' || strcmp(chatId, "cron") == 0) {
+            doc["chat_id"] = msg->chat_id;
+            changed = true;
+        }
     }
 
     if (changed) {
@@ -228,6 +235,9 @@ void MimiAgent::agentTask(void* arg) {
     MimiAgent* self = (MimiAgent*)arg;
     MIMI_LOGI(TAG, "Agent loop started on core %d", xPortGetCoreID());
 
+    MIMI_LOGI(TAG, "PSRAM total size: %d bytes",
+                  (int)heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+                  
     // Allocate large buffers from PSRAM
     char* systemPrompt = (char*)MIMI_CALLOC_PSRAM(1, MIMI_CONTEXT_BUF_SIZE);
     char* toolOutput = (char*)MIMI_CALLOC_PSRAM(1, TOOL_OUTPUT_SIZE);

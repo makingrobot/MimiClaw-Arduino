@@ -68,6 +68,12 @@ bool MimiApplication::OnInit() {
     }
     _telegram.setProxy(&_proxy);
 
+    if (!_feishu.begin(&_bus)) {
+        MIMI_LOGE(TAG, "Feishu init failed");
+        return false;
+    }
+    _feishu.setProxy(&_proxy);
+
     if (!_llm.begin()) {
         MIMI_LOGE(TAG, "LLM init failed");
         return false;
@@ -104,7 +110,22 @@ bool MimiApplication::OnInit() {
     }
 
     MIMI_LOGI(TAG, "All subsystems initialized");
-    return true;
+
+    // use mimi_secrets.h config.
+    setWiFi(MIMI_WIFI_SSID, MIMI_WIFI_PASS);
+
+    setFeishuCredentials(MIMI_FEISHU_APP_ID, MIMI_FEISHU_APP_SECRET);
+
+    // LLM model
+    setModelProvider("openai");
+    setApiUrl(MIMI_OPENAI_API_URL);
+    setModel(MIMI_OPENAI_MODEL);
+    setApiKey(MIMI_OPENAI_API_KEY);
+
+    // start
+    bool state = Start();
+
+    return state;
 }
 
 void MimiApplication::outboundTask(void* arg) {
@@ -124,12 +145,23 @@ void MimiApplication::outboundTask(void* arg) {
                 MIMI_LOGI(TAG, "Telegram send success for %s (%d bytes)",
                           msg.chat_id, (int)strlen(msg.content));
             }
+
         } else if (strcmp(msg.channel, MIMI_CHAN_WEBSOCKET) == 0) {
             if (!self->_ws.send(msg.chat_id, msg.content)) {
                 MIMI_LOGW(TAG, "WS send failed for %s", msg.chat_id);
             }
+
         } else if (strcmp(msg.channel, MIMI_CHAN_SYSTEM) == 0) {
             MIMI_LOGI(TAG, "System message [%s]: %.128s", msg.chat_id, msg.content);
+
+        } else if (strcmp(msg.channel, MIMI_CHAN_FEISHU) == 0) {
+            if (!self->_feishu.sendMessage(msg.chat_id, msg.content)) {
+                MIMI_LOGE(TAG, "Feishu send failed for %s", msg.chat_id);
+            } else {
+                MIMI_LOGI(TAG, "Feishu send success for %s (%d bytes)",
+                          msg.chat_id, (int)strlen(msg.content));
+            }
+            
         } else {
             MIMI_LOGW(TAG, "Unknown channel: %s", msg.channel);
         }
@@ -138,7 +170,7 @@ void MimiApplication::outboundTask(void* arg) {
     }
 }
 
-bool MimiApplication::start() {
+bool MimiApplication::Start() {
     if (_started) return true;
 
     // Connect WiFi
@@ -169,7 +201,8 @@ bool MimiApplication::start() {
         return false;
     }
 
-    _telegram.start();
+    _feishu.start();
+    //_telegram.start();
     _cron.start();
     _heartbeat.start();
     _ws.start();
@@ -180,7 +213,6 @@ bool MimiApplication::start() {
 }
 
 void MimiApplication::OnLoop() {
-    // For non-task environments; mainly a no-op since tasks handle everything
     vTaskDelay(pdMS_TO_TICKS(1000));
 }
 
@@ -233,4 +265,8 @@ bool MimiApplication::isWiFiConnected() {
 
 const char* MimiApplication::getIP() {
     return _wifi.getIP();
+}
+
+void MimiApplication::setFeishuCredentials(const char* app_id, const char* app_secret) {
+    _feishu.setCredentials(app_id, app_secret);
 }

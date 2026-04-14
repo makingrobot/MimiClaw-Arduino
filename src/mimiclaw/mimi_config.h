@@ -4,7 +4,18 @@
 #ifndef MIMI_CONFIG_H
 #define MIMI_CONFIG_H
 
+/* Build-time secrets (highest priority, override NVS) */
+#if __has_include("mimi_secrets.h")
+#include "mimi_secrets.h"
+#endif
+
 // ── WiFi ───────────────────────────────────────────────────────
+#ifndef MIMI_WIFI_SSID
+#define MIMI_WIFI_SSID       ""
+#endif
+#ifndef MIMI_WIFI_PASS
+#define MIMI_WIFI_PASS       ""
+#endif
 #ifndef MIMI_WIFI_MAX_RETRY
 #define MIMI_WIFI_MAX_RETRY          10
 #endif
@@ -16,6 +27,9 @@
 #endif
 
 // ── Telegram ───────────────────────────────────────────────────
+#ifndef MIMI_TG_TOKEN
+#define MIMI_TG_TOKEN               ""
+#endif
 #ifndef MIMI_TG_POLL_TIMEOUT_S
 #define MIMI_TG_POLL_TIMEOUT_S       30
 #endif
@@ -23,13 +37,33 @@
 #define MIMI_TG_MAX_MSG_LEN          4096
 #endif
 #ifndef MIMI_TG_POLL_STACK
-#define MIMI_TG_POLL_STACK           (12 * 1024)
+#define MIMI_TG_POLL_STACK           (8 * 1024)
 #endif
 #ifndef MIMI_TG_POLL_PRIO
 #define MIMI_TG_POLL_PRIO            5
 #endif
 #ifndef MIMI_TG_POLL_CORE
 #define MIMI_TG_POLL_CORE            0
+#endif
+
+// ── Feishu ───────────────────────────────────────────────────
+#ifndef MIMI_FEISHU_APP_ID
+#define MIMI_FEISHU_APP_ID   ""
+#endif
+#ifndef MIMI_FEISHU_APP_SECRET
+#define MIMI_FEISHU_APP_SECRET ""
+#endif
+#ifndef MIMI_FEISHU_MAX_MSG_LEN
+#define MIMI_FEISHU_MAX_MSG_LEN          4096
+#endif
+#ifndef MIMI_FEISHU_POLL_STACK
+#define MIMI_FEISHU_POLL_STACK           (8 * 1024)
+#endif
+#ifndef MIMI_FEISHU_POLL_PRIO
+#define MIMI_FEISHU_POLL_PRIO            5
+#endif
+#ifndef MIMI_FEISHU_POLL_CORE
+#define MIMI_FEISHU_POLL_CORE            0
 #endif
 
 // ── Agent ──────────────────────────────────────────────────────
@@ -75,6 +109,12 @@
 #endif
 #ifndef MIMI_OPENAI_API_URL
 #define MIMI_OPENAI_API_URL          "https://api.openai.com/v1/chat/completions"
+#endif
+#ifndef MIMI_OPENAI_API_KEY
+#define MIMI_OPENAI_API_KEY          ""
+#endif
+#ifndef MIMI_OPENAI_MODEL
+#define MIMI_OPENAI_MODEL         ""
 #endif
 #ifndef MIMI_LLM_API_VERSION
 #define MIMI_LLM_API_VERSION         "2023-06-01"
@@ -163,6 +203,7 @@
 #define MIMI_CHAN_WEBSOCKET  "websocket"
 #define MIMI_CHAN_CLI        "cli"
 #define MIMI_CHAN_SYSTEM     "system"
+#define MIMI_CHAN_FEISHU     "feishu"
 
 // ── Preferences namespaces ─────────────────────────────────────
 #define MIMI_PREF_WIFI      "wifi_config"
@@ -170,6 +211,7 @@
 #define MIMI_PREF_LLM       "llm_config"
 #define MIMI_PREF_PROXY     "proxy_config"
 #define MIMI_PREF_SEARCH    "search_config"
+#define MIMI_PREF_FS        "feishu_config"
 
 // ── PSRAM allocation helper ────────────────────────────────────
 #ifdef BOARD_HAS_PSRAM
@@ -180,13 +222,18 @@
 #define MIMI_CALLOC_PSRAM(n, size) calloc(n, size)
 #endif
 
-// ── Logging helpers ────────────────────────────────────────────
-#define MIMI_LOGI(tag, fmt, ...) log_i("[%s] " fmt, tag, ##__VA_ARGS__)
-#define MIMI_LOGW(tag, fmt, ...) log_w("[%s] " fmt, tag, ##__VA_ARGS__)
-#define MIMI_LOGE(tag, fmt, ...) log_e("[%s] " fmt, tag, ##__VA_ARGS__)
-#define MIMI_LOGD(tag, fmt, ...) log_d("[%s] " fmt, tag, ##__VA_ARGS__)
-
 // Suppress unused TAG when debug logging is disabled
 #define MIMI_TAG_UNUSED __attribute__((unused))
+
+#include "src/framework/sys/log.h"
+// ── Logging helpers ────────────────────────────────────────────
+#define MIMI_LOGI(tag, fmt, ...) Log::Info(tag, fmt, ##__VA_ARGS__)
+#define MIMI_LOGW(tag, fmt, ...) Log::Warn(tag,  fmt, ##__VA_ARGS__)
+#define MIMI_LOGE(tag, fmt, ...) Log::Error(tag, fmt, ##__VA_ARGS__)
+#define MIMI_LOGD(tag, fmt, ...) Log::Debug(tag, fmt, ##__VA_ARGS__)
+// #define MIMI_LOGI(tag, fmt, ...) log_i(tag, fmt, ##__VA_ARGS__)
+// #define MIMI_LOGW(tag, fmt, ...) log_w("[%s] " fmt, tag, ##__VA_ARGS__)
+// #define MIMI_LOGE(tag, fmt, ...) log_e("[%s] " fmt, tag, ##__VA_ARGS__)
+// #define MIMI_LOGD(tag, fmt, ...) log_d("[%s] " fmt, tag, ##__VA_ARGS__)
 
 #endif // MIMI_CONFIG_H

@@ -8,11 +8,7 @@
 
 static const char* TAG MIMI_TAG_UNUSED = "telegram";
 
-MimiTelegram::MimiTelegram()
-    : _bus(nullptr), _proxy(nullptr), _updateOffset(0),
-      _lastSavedOffset(-1), _lastOffsetSaveMs(0),
-      _taskHandle(nullptr), _seenIdx(0)
-{
+MimiTelegram::MimiTelegram() {
     memset(_token, 0, sizeof(_token));
     memset(_seenKeys, 0, sizeof(_seenKeys));
 }
@@ -280,24 +276,23 @@ bool MimiTelegram::sendMessage(const char* chat_id, const char* text) {
     return allOk;
 }
 
-void MimiTelegram::pollTask(void* arg) {
-    MimiTelegram* self = (MimiTelegram*)arg;
+void MimiTelegram::pollTask() {
     MIMI_LOGI(TAG, "Telegram polling task started");
 
     while (true) {
-        if (self->_token[0] == '\0') {
+        if (_token[0] == '\0') {
             MIMI_LOGW(TAG, "No bot token, waiting...");
-            vTaskDelay(pdMS_TO_TICKS(5000));
+            vTaskDelay(pdMS_TO_TICKS(60000));
             continue;
         }
 
         char params[128];
         snprintf(params, sizeof(params), "getUpdates?offset=%lld&timeout=%d",
-                 (long long)self->_updateOffset, MIMI_TG_POLL_TIMEOUT_S);
+                 (long long)_updateOffset, MIMI_TG_POLL_TIMEOUT_S);
 
-        String resp = self->apiCall(params, nullptr);
+        String resp = apiCall(params, nullptr);
         if (resp.length() > 0) {
-            self->processUpdates(resp);
+            processUpdates(resp);
         } else {
             vTaskDelay(pdMS_TO_TICKS(3000));
         }
@@ -308,10 +303,22 @@ bool MimiTelegram::start() {
     if (_taskHandle) return true;
 
     BaseType_t ok = xTaskCreatePinnedToCore(
-        pollTask, "tg_poll", MIMI_TG_POLL_STACK,
-        this, MIMI_TG_POLL_PRIO, &_taskHandle, MIMI_TG_POLL_CORE);
+        [](void *arg){
+            MimiTelegram* self = (MimiTelegram*)arg;
+            self->pollTask();
+        }, 
+        "tg_poll", 
+        MIMI_TG_POLL_STACK,  //注意：过大可能会导致创建失败。
+        this, 
+        MIMI_TG_POLL_PRIO, 
+        &_taskHandle, 
+        MIMI_TG_POLL_CORE);
 
-    return ok == pdPASS;
+    if (ok != pdPASS) {
+        MIMI_LOGW(TAG, "Telegram poll task create failure.");
+        return false;
+    }
+    return true;
 }
 
 void MimiTelegram::stop() {

@@ -25,6 +25,7 @@
 #include "mimi_heartbeat.h"
 #include "mimi_skills.h"
 #include "mimi_context.h"
+#include "mimi_feishu.h"
 #include "src/framework/app/application.h"
 
 class MimiApplication : public Application {
@@ -45,7 +46,7 @@ public:
      * Call after begin() and optionally after configuring secrets.
      * @return true on success
      */
-    bool start();
+    bool Start();
 
     /**
      * Process loop - call in loop() or let tasks run autonomously.
@@ -64,6 +65,7 @@ public:
     void clearProxy();
     void setSearchKey(const char* key);
     void setTimezone(const char* tz);
+    void setFeishuCredentials(const char* app_id, const char* app_secret);
 
     // --- Status ---
     bool isWiFiConnected();
@@ -94,6 +96,7 @@ private:
     MimiHeartbeat _heartbeat;
     MimiSkills _skills;
     MimiContext _context;
+    MimiFeishu _feishu;
 
     bool _started;
     

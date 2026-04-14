@@ -9,8 +9,8 @@
 #include "freertos/queue.h"
 
 struct MimiMsg {
-    char channel[16];   // "telegram", "websocket", "cli", "system"
-    char chat_id[32];   // Telegram chat_id or WS client id
+    char channel[16];   // "telegram", "feishu", "websocket", "cli", "system"
+    char chat_id[32];   // Telegram/Feishu chat_id or WS client id
     char* content;      // Heap-allocated message text (caller must free)
 };
 
