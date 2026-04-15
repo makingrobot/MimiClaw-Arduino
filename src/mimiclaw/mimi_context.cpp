@@ -1,13 +1,12 @@
 #include "mimi_context.h"
 #include "mimi_config.h"
-#include <SPIFFS.h>
 
-static const char* TAG MIMI_TAG_UNUSED = "context";
+#define TAG  "context"
 
 MimiContext::MimiContext() : _memory(nullptr), _skills(nullptr) {}
 
 size_t MimiContext::appendFile(char* buf, size_t size, size_t offset, const char* path, const char* header) {
-    File f = SPIFFS.open(path, "r");
+    File f = _file_system->OpenFile(path, "r");
     if (!f) return offset;
 
     if (header && offset < size - 1) {

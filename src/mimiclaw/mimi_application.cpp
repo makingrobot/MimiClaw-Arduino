@@ -1,6 +1,7 @@
 #include "mimi_application.h"
-#include <SPIFFS.h>
 #include <esp_heap_caps.h>
+#include "src/framework/board/board.h"
+#include "src/framework/file/file_system.h"
 
 #define TAG "mimi"
 
@@ -23,13 +24,14 @@ bool MimiApplication::OnInit() {
               (int)heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
 #endif
 
-    // Initialize SPIFFS
-    if (!SPIFFS.begin(true)) {
-        MIMI_LOGE(TAG, "SPIFFS mount failed");
+    // Get FileSystem
+    FileSystem *file_system = Board::GetInstance().GetFileSystem();
+    if (file_system == nullptr) {
+        MIMI_LOGE(TAG, "FileSystem mount failed");
         return false;
     }
-    MIMI_LOGI(TAG, "SPIFFS: total=%d, used=%d",
-              (int)SPIFFS.totalBytes(), (int)SPIFFS.usedBytes());
+    MIMI_LOGI(TAG, "fs type: %s, totalbytes: %ld, freebytes: %ld", 
+            file_system->type().c_str(), file_system->totalBytes(), file_system->freeBytes());
 
     // Initialize subsystems
     if (!_bus.begin()) {
@@ -37,17 +39,17 @@ bool MimiApplication::OnInit() {
         return false;
     }
 
-    if (!_memory.begin()) {
+    if (!_memory.begin(file_system)) {
         MIMI_LOGE(TAG, "Memory init failed");
         return false;
     }
 
-    if (!_skills.begin()) {
+    if (!_skills.begin(file_system)) {
         MIMI_LOGE(TAG, "Skills init failed");
         return false;
     }
 
-    if (!_session.begin()) {
+    if (!_session.begin(file_system)) {
         MIMI_LOGE(TAG, "Session init failed");
         return false;
     }
@@ -80,17 +82,17 @@ bool MimiApplication::OnInit() {
     }
     _llm.setProxy(&_proxy);
 
-    if (!_tools.begin(&_proxy)) {
+    if (!_tools.begin(file_system, &_proxy)) {
         MIMI_LOGE(TAG, "Tools init failed");
         return false;
     }
 
-    if (!_cron.begin(&_bus)) {
+    if (!_cron.begin(&_bus, file_system)) {
         MIMI_LOGE(TAG, "Cron init failed");
         return false;
     }
 
-    if (!_heartbeat.begin(&_bus)) {
+    if (!_heartbeat.begin(&_bus, file_system)) {
         MIMI_LOGE(TAG, "Heartbeat init failed");
         return false;
     }
@@ -103,6 +105,7 @@ bool MimiApplication::OnInit() {
     // Set up context builder dependencies
     _context.setMemory(&_memory);
     _context.setSkills(&_skills);
+    _context.setFileSystem(file_system);
 
     if (!_agent.begin(&_bus, &_llm, &_session, &_tools, &_context)) {
         MIMI_LOGE(TAG, "Agent init failed");

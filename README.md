@@ -22,6 +22,7 @@
 
 - 带有 **PSRAM** 的 ESP32-S3 开发板（推荐：8MB 以上 PSRAM，16MB Flash）
 - WiFi 网络连接
+- SD卡（可选）
 
 ## 依赖库
 
@@ -49,48 +50,12 @@
 | 分区方案 | Default with large SPIFFS 或 其它类似方案 |
 
 
-### 自定义工具
+## 持久化数据
 
-#### 1.控制硬件输出的工具，如控制LED
-```cpp
-bool myOutToolExecute(const char* input_json, char* output, size_t output_size) {
-    // 解析 input_json，执行操作，将结果写入 output
-    snprintf(output, output_size, "工具执行结果");
-    return true;
-}
-```
-
-#### 2.从硬件获取数据的工具，如温湿度传感器数据
-```cpp
-bool myInToolExecute(const char* input_json, char* output, size_t output_size) {
-    // 解析 input_json，执行操作，将结果写入 output
-    snprintf(output, output_size, "工具执行结果");
-    return true;
-}
-```
-
-#### 3.注册工具到MimiClaw
-```cpp
-MimiTool myTool = {
-    .name = "my_tool",
-    .description = "描述这个工具的功能",
-    .input_schema_json = "{\"type\":\"object\",\"properties\":{\"param\":{\"type\":\"string\"}},\"required\":[\"param\"]}",
-    .execute = myToolExecute
-};
-
-mimi.tools().registerTool(&myTool);
-```
-
-## 系统架构
-![架构图](assets/arch.png)
-
-
-## SPIFFS 数据结构
-
-使用 SPIFFS 上传工具将 `spiffs-data` 文件夹上传至设备：
+MimiClaw需要文件系统来存储一些信息，数据结构如下：
 
 ```
-/spiffs-data/
+/persist-data/
   config/
     SOUL.md          — AI 人格定义
     USER.md          — 用户信息（自动填充）
@@ -101,6 +66,90 @@ mimi.tools().registerTool(&myTool);
   skills/            — 技能文件（自动创建）
   cron.json          — 定时任务配置（自动创建）
 ```
+系统支持各种文件系统，如SPIFFS、FatFS、SDFS等，可根据硬件情况选择和配置<br/>
+若简单使用可选SPIFFS，用上传工具将 `persist-data` 文件夹上传至设备，请参考[SPIFFS.md](SPIFFS.md)<br/>
+若需要更多存储，可使用SD卡，配置CONFIG_USE_SDFS=1，将 `persist-data` 文件夹上传SD卡内
+
+## 系统架构
+![架构图](assets/arch.png)
+
+
+## 自定义工具
+
+### 【控制硬件输出】如控制LED
+
+1. 在Board继承类中实现硬件驱动封装，若应用框架未支持，需编写驱动代码，否则可直接实例化后使用，如Ws2812，
+```cpp
+led_ = new Ws2812Led(pin, num_of_pixels); //led_是成员变量
+```
+2. 编写工具执行程序
+```cpp
+bool ledToolExecute(const char* input_json, char* output, size_t output_size) {
+    Led *led = Board::GetInstance().GetLed();
+    // 解析input_json后，做相关操作
+    led->TurnOn(); 
+    snprintf(output, output_size, "工具执行结果");
+    return true;
+}
+```
+3. 注册工具到MimiClaw
+```cpp
+MimiTool ledTool = {
+    .name = "led_tool",
+    .description = "控制LED的开关",
+    .input_schema_json = "{\"type\":\"object\",\"properties\":{\"param\":{\"type\":\"string\"}},\"required\":[\"param\"]}",
+    .execute = ledToolExecute
+};
+
+mimi.tools().registerTool(&ledTool);
+```
+这一步的input_schema_json描述很关键，它决定了传入到工具函数内的参数，这些参数是由LLM根据文本输入提取出来的。
+
+4. 编写工具使用指南（给LLM用）
+
+这是重重要的一点，Agent通过学习这份指南后，要能懂得在何时调用工具、及如何调用。
+
+### 【从硬件获取数据】如温度传感器数据
+1. 在Board继承类中实现硬件驱动封装，若应用框架未支持，需编写驱动代码，否则可直接实例化后使用，如普通数字传感器，可使用实例化DigitalSensor或AnalogSensor后实例。
+```cpp
+std::shared_ptr<AnalogSensor> temp_ptr = std::make_shared<AnalogSensor>("temp_sensor", pin);
+AddSensor(temp_ptr);
+```
+2. 编写工具执行程序
+```cpp
+bool tempToolExecute(const char* input_json, char* output, size_t output_size) {
+    std::shared_ptr<Sensor> temp_ptr = Board::GetInstance().GetSensor("temp_sensor");
+    if (temp_ptr->ReadData()) {  // 读取传感器数据 
+        SensorValue *value = temp_ptr->value();
+        // 其他处理
+    } else {
+      // 读取数据失败
+    }
+    snprintf(output, output_size, "工具执行结果");
+    return true;
+}
+```
+3. 注册工具到MimiClaw
+```cpp
+MimiTool tempTool = {
+    .name = "temp_tool",
+    .description = "描述这个工具的功能",
+    .input_schema_json = "{\"type\":\"object\",\"properties\":{\"param\":{\"type\":\"string\"}},\"required\":[\"param\"]}",
+    .execute = tempToolExecute
+};
+
+mimi.tools().registerTool(&tempTool);
+```
+4. 编写工具使用指南（给LLM用）
+
+
+## 计划
+- 飞书机器人支持（已实现）
+- SD卡及其他文件系统支持（已实现）
+- 语音输入
+- 语音输出
+- 拍照输入（摄像头支持）
+
 
 ## 许可证
 

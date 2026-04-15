@@ -6,6 +6,7 @@
 
 #include <Arduino.h>
 #include "mimi_bus.h"
+#include "src/framework/file/file_system.h"
 
 enum CronKind {
     CRON_KIND_EVERY = 0,
@@ -30,7 +31,7 @@ struct CronJob {
 class MimiCron {
 public:
     MimiCron();
-    bool begin(MimiBus* bus);
+    bool begin(MimiBus* bus, FileSystem *file_system);
     bool start();
     void stop();
 
@@ -44,6 +45,7 @@ private:
     CronJob _jobs[MAX_JOBS];
     int _jobCount;
     MimiBus* _bus;
+    FileSystem *_file_system;
     TaskHandle_t _taskHandle;
 
     bool loadJobs();

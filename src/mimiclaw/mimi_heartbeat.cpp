@@ -1,8 +1,7 @@
 #include "mimi_heartbeat.h"
 #include "mimi_config.h"
-#include <SPIFFS.h>
 
-static const char* TAG MIMI_TAG_UNUSED = "heartbeat";
+#define TAG  "heartbeat"
 
 #define HEARTBEAT_PROMPT \
     "Read " MIMI_HEARTBEAT_FILE " and follow any instructions or tasks listed there. " \
@@ -14,15 +13,16 @@ MimiHeartbeat::MimiHeartbeat() : _bus(nullptr), _timer(nullptr) {
     g_hb = this;
 }
 
-bool MimiHeartbeat::begin(MimiBus* bus) {
+bool MimiHeartbeat::begin(MimiBus* bus, FileSystem *file_system) {
     _bus = bus;
+    _file_system = file_system;
     MIMI_LOGI(TAG, "Heartbeat initialized (file: %s, interval: %ds)",
               MIMI_HEARTBEAT_FILE, MIMI_HEARTBEAT_INTERVAL_MS / 1000);
     return true;
 }
 
 bool MimiHeartbeat::hasTasks() {
-    File f = SPIFFS.open(MIMI_HEARTBEAT_FILE, "r");
+    File f = _file_system->OpenFile(MIMI_HEARTBEAT_FILE, "r");
     if (!f) return false;
 
     bool found = false;

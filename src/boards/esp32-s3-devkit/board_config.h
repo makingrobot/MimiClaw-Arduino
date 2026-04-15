@@ -11,6 +11,11 @@
 
 #define BUILTIN_LED_PIN                     GPIO_NUM_48
 
+#define SD_CLK_PIN                          GPIO_NUM_NC 
+#define SD_MISO_PIN                         GPIO_NUM_NC 
+#define SD_MOSI_PIN                         GPIO_NUM_NC
+#define SD_CS_PIN                           GPIO_NUM_NC
+
 // LED驱动
 #define CONFIG_USE_LED_GPIO                 1
 #define CONFIG_USE_LED_WS2812               1

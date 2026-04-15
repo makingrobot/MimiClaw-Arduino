@@ -6,11 +6,12 @@
 
 #include <Arduino.h>
 #include "mimi_bus.h"
+#include "src/framework/file/file_system.h"
 
 class MimiHeartbeat {
 public:
     MimiHeartbeat();
-    bool begin(MimiBus* bus);
+    bool begin(MimiBus* bus, FileSystem *file_system);
     bool start();
     void stop();
     bool trigger();
@@ -18,6 +19,7 @@ public:
 private:
     MimiBus* _bus;
     TimerHandle_t _timer;
+    FileSystem* _file_system;
 
     bool hasTasks();
     bool sendHeartbeat();

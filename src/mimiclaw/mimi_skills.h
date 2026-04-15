@@ -5,11 +5,12 @@
 #define MIMI_SKILLS_H
 
 #include <Arduino.h>
+#include "src/framework/file/file_system.h"
 
 class MimiSkills {
 public:
     MimiSkills();
-    bool begin();
+    bool begin(FileSystem *file_system);
 
     /**
      * Build a summary of all installed skills for the system prompt.
@@ -21,6 +22,8 @@ public:
 
 private:
     void installBuiltin(const char* filename, const char* content);
+
+    FileSystem *_file_system;
 };
 
 #endif // MIMI_SKILLS_H

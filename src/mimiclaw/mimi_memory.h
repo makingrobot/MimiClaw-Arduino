@@ -5,11 +5,12 @@
 #define MIMI_MEMORY_H
 
 #include <Arduino.h>
+#include "src/framework/file/file_system.h"
 
 class MimiMemory {
 public:
     MimiMemory();
-    bool begin();
+    bool begin(FileSystem *file_system);
 
     bool readLongTerm(char* buf, size_t size);
     bool writeLongTerm(const char* content);
@@ -18,6 +19,7 @@ public:
 
 private:
     void getDateStr(char* buf, size_t size, int daysAgo);
+    FileSystem *_file_system;
 };
 
 #endif // MIMI_MEMORY_H

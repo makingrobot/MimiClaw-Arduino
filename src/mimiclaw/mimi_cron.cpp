@@ -1,12 +1,11 @@
 #include "mimi_cron.h"
 #include "mimi_config.h"
-#include <SPIFFS.h>
 #include <ArduinoJson.h>
 #include <time.h>
 #include <esp_random.h>
 #include "arduino_json_psram.h"
 
-static const char* TAG MIMI_TAG_UNUSED = "cron";
+#define TAG  "cron"
 
 // Global cron instance pointer for tool callbacks
 static MimiCron* g_cron = nullptr;
@@ -15,8 +14,9 @@ MimiCron::MimiCron() : _jobCount(0), _bus(nullptr), _taskHandle(nullptr) {
     g_cron = this;
 }
 
-bool MimiCron::begin(MimiBus* bus) {
+bool MimiCron::begin(MimiBus* bus, FileSystem *file_system) {
     _bus = bus;
+    _file_system = file_system;
     return loadJobs();
 }
 
@@ -53,7 +53,7 @@ bool MimiCron::sanitizeDestination(CronJob* job) {
 }
 
 bool MimiCron::loadJobs() {
-    File f = SPIFFS.open(MIMI_CRON_FILE, "r");
+    File f = _file_system->OpenFile(MIMI_CRON_FILE, "r");
     if (!f) {
         MIMI_LOGI(TAG, "No cron file found, starting fresh");
         _jobCount = 0;
@@ -138,7 +138,7 @@ bool MimiCron::saveJobs() {
         item["delete_after_run"] = job->delete_after_run;
     }
 
-    File f = SPIFFS.open(MIMI_CRON_FILE, "w");
+    File f = _file_system->OpenFile(MIMI_CRON_FILE, "w");
     if (!f) {
         MIMI_LOGE(TAG, "Failed to open %s for writing", MIMI_CRON_FILE);
         return false;

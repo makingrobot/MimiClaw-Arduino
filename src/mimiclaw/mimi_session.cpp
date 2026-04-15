@@ -1,15 +1,15 @@
 #include "mimi_session.h"
 #include "mimi_config.h"
-#include <SPIFFS.h>
 #include <time.h>
 #include "arduino_json_psram.h"
 
-static const char* TAG MIMI_TAG_UNUSED = "session";
+#define TAG  "session"
 
 MimiSession::MimiSession() {}
 
-bool MimiSession::begin() {
+bool MimiSession::begin(FileSystem *file_system) {
     MIMI_LOGI(TAG, "Session manager initialized");
+    _file_system = file_system;
     return true;
 }
 
@@ -19,7 +19,7 @@ String MimiSession::sessionPath(const char* chat_id) {
 
 bool MimiSession::append(const char* chat_id, const char* role, const char* content) {
     String path = sessionPath(chat_id);
-    File f = SPIFFS.open(path, "a");
+    File f = _file_system->OpenFile(path.c_str(), "a");
     if (!f) {
         MIMI_LOGE(TAG, "Cannot open session file %s", path.c_str());
         return false;
@@ -39,7 +39,7 @@ bool MimiSession::append(const char* chat_id, const char* role, const char* cont
 
 bool MimiSession::getHistoryJson(const char* chat_id, char* buf, size_t size, int maxMsgs) {
     String path = sessionPath(chat_id);
-    File f = SPIFFS.open(path, "r");
+    File f = _file_system->OpenFile(path.c_str(), "r");
     if (!f) {
         snprintf(buf, size, "[]");
         return true;
@@ -96,7 +96,7 @@ bool MimiSession::getHistoryJson(const char* chat_id, char* buf, size_t size, in
 
 bool MimiSession::getHistoryJson(const char* chat_id, JsonArray& arr, int maxMsgs) {
     String path = sessionPath(chat_id);
-    File f = SPIFFS.open(path, "r");
+    File f = _file_system->OpenFile(path.c_str(), "r");
     if (!f) return true; // No history is OK
 
     struct MsgEntry {
@@ -137,7 +137,7 @@ bool MimiSession::getHistoryJson(const char* chat_id, JsonArray& arr, int maxMsg
 
 bool MimiSession::clear(const char* chat_id) {
     String path = sessionPath(chat_id);
-    if (SPIFFS.remove(path)) {
+    if (_file_system->DeleteFile(path.c_str())) {
         MIMI_LOGI(TAG, "Session %s cleared", chat_id);
         return true;
     }
@@ -145,7 +145,7 @@ bool MimiSession::clear(const char* chat_id) {
 }
 
 void MimiSession::list() {
-    File root = SPIFFS.open("/");
+    File root = _file_system->OpenFile("/");
     if (!root) {
         MIMI_LOGW(TAG, "Cannot open SPIFFS directory");
         return;

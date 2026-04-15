@@ -1,8 +1,7 @@
 #include "mimi_skills.h"
 #include "mimi_config.h"
-#include <SPIFFS.h>
 
-static const char* TAG MIMI_TAG_UNUSED = "skills";
+#define TAG  "skills"
 
 // ── Built-in skill contents ─────────────────────────────────
 
@@ -64,12 +63,12 @@ MimiSkills::MimiSkills() {}
 void MimiSkills::installBuiltin(const char* filename, const char* content) {
     String path = String(MIMI_SKILLS_PREFIX) + filename + ".md";
 
-    if (SPIFFS.exists(path)) {
+    if (_file_system->ExistsFile(path.c_str())) {
         MIMI_LOGD(TAG, "Skill exists: %s", path.c_str());
         return;
     }
 
-    File f = SPIFFS.open(path, "w");
+    File f = _file_system->OpenFile(path.c_str(), "w");
     if (!f) {
         MIMI_LOGE(TAG, "Cannot write skill: %s", path.c_str());
         return;
@@ -80,8 +79,10 @@ void MimiSkills::installBuiltin(const char* filename, const char* content) {
     MIMI_LOGI(TAG, "Installed built-in skill: %s", path.c_str());
 }
 
-bool MimiSkills::begin() {
+bool MimiSkills::begin(FileSystem *file_system) {
     MIMI_LOGI(TAG, "Initializing skills system");
+
+    _file_system = file_system;
 
     for (size_t i = 0; i < NUM_BUILTINS; i++) {
         installBuiltin(s_builtins[i].filename, s_builtins[i].content);
@@ -93,7 +94,7 @@ bool MimiSkills::begin() {
 
 size_t MimiSkills::buildSummary(char* buf, size_t size) {
     // Enumerate SPIFFS files matching the skills prefix
-    File root = SPIFFS.open("/");
+    File root = _file_system->OpenFile("/");
     if (!root) {
         MIMI_LOGW(TAG, "Cannot open SPIFFS root");
         buf[0] = '\0';
@@ -113,7 +114,7 @@ size_t MimiSkills::buildSummary(char* buf, size_t size) {
 
     while (entry && off < size - 1) {
         String name = entry.name();
-        // SPIFFS.open returns names like "/skills/weather.md"
+        //  returns names like "/skills/weather.md"
         if (!name.startsWith(matchPrefix) || !name.endsWith(".md")) {
             entry = root.openNextFile();
             continue;

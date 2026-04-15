@@ -5,6 +5,7 @@
 #define MIMI_TOOLS_H
 
 #include <Arduino.h>
+#include "src/framework/file/file_system.h"
 
 // Tool execution function type
 typedef bool (*MimiToolExecFn)(const char* input_json, char* output, size_t output_size);
@@ -21,7 +22,7 @@ class MimiProxy;  // forward
 class MimiToolRegistry {
 public:
     MimiToolRegistry();
-    bool begin(MimiProxy* proxy = nullptr);
+    bool begin(FileSystem *file_system, MimiProxy* proxy = nullptr);
 
     void registerTool(const MimiTool* tool);
     const char* getToolsJson();
@@ -30,6 +31,7 @@ public:
     static const int MAX_TOOLS = 16;
 
 private:
+    FileSystem *_file_system;
     MimiTool _tools[MAX_TOOLS];
     int _toolCount;
     String _toolsJson;

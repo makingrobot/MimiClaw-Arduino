@@ -6,11 +6,12 @@
 
 #include <Arduino.h>
 #include <ArduinoJson.h>
+#include "src/framework/file/file_system.h"
 
 class MimiSession {
 public:
     MimiSession();
-    bool begin();
+    bool begin(FileSystem *file_system);
 
     bool append(const char* chat_id, const char* role, const char* content);
     bool getHistoryJson(const char* chat_id, char* buf, size_t size, int maxMsgs);
@@ -20,6 +21,7 @@ public:
 
 private:
     String sessionPath(const char* chat_id);
+    FileSystem *_file_system;
 };
 
 #endif // MIMI_SESSION_H

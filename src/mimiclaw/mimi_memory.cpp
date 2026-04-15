@@ -1,14 +1,14 @@
 #include "mimi_memory.h"
 #include "mimi_config.h"
-#include <SPIFFS.h>
 #include <time.h>
 
-static const char* TAG MIMI_TAG_UNUSED = "memory";
+#define TAG  "memory"
 
 MimiMemory::MimiMemory() {}
 
-bool MimiMemory::begin() {
+bool MimiMemory::begin(FileSystem *file_system) {
     MIMI_LOGI(TAG, "Memory store initialized");
+    _file_system = file_system;
     return true;
 }
 
@@ -22,7 +22,7 @@ void MimiMemory::getDateStr(char* buf, size_t size, int daysAgo) {
 }
 
 bool MimiMemory::readLongTerm(char* buf, size_t size) {
-    File f = SPIFFS.open(MIMI_MEMORY_FILE, "r");
+    File f = _file_system->OpenFile(MIMI_MEMORY_FILE, "r");
     if (!f) {
         buf[0] = '\0';
         return false;
@@ -34,7 +34,7 @@ bool MimiMemory::readLongTerm(char* buf, size_t size) {
 }
 
 bool MimiMemory::writeLongTerm(const char* content) {
-    File f = SPIFFS.open(MIMI_MEMORY_FILE, "w");
+    File f = _file_system->OpenFile(MIMI_MEMORY_FILE, "w");
     if (!f) {
         MIMI_LOGE(TAG, "Cannot write %s", MIMI_MEMORY_FILE);
         return false;
@@ -51,8 +51,8 @@ bool MimiMemory::appendToday(const char* note) {
 
     String path = String(MIMI_SPIFFS_MEMORY_DIR) + "/" + dateStr + ".md";
 
-    bool exists = SPIFFS.exists(path);
-    File f = SPIFFS.open(path, exists ? "a" : "w");
+    bool exists = _file_system->ExistsFile(path.c_str());
+    File f = _file_system->OpenFile(path.c_str(), exists ? "a" : "w");
     if (!f) {
         MIMI_LOGE(TAG, "Cannot open %s", path.c_str());
         return false;
@@ -75,7 +75,7 @@ bool MimiMemory::readRecent(char* buf, size_t size, int days) {
         getDateStr(dateStr, sizeof(dateStr), i);
 
         String path = String(MIMI_SPIFFS_MEMORY_DIR) + "/" + dateStr + ".md";
-        File f = SPIFFS.open(path, "r");
+        File f = _file_system->OpenFile(path.c_str(), "r");
         if (!f) continue;
 
         if (offset > 0 && offset < size - 4) {

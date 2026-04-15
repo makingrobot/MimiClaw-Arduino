@@ -19,11 +19,13 @@
 // 使用WiFi
 #define CONFIG_USE_WIFI                     1
 
+// 使用文件系统
+#define CONFIG_USE_FS                       1
+#define CONFIS_USE_SPIFFS                   1
+#define CONFIG_USE_SDFS                     0  // 使用SDCard
+
 // 使用音频
 #define CONFIG_USE_AUDIO                    0
-
-// 使用文件系统
-#define CONFIG_USE_FS                       0
 
 // 使用显示
 #define CONFIG_USE_DISPLAY                  0   // 显示

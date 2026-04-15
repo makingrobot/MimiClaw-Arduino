@@ -2,20 +2,21 @@
 #include "mimi_config.h"
 #include "mimi_cron.h"
 #include <ArduinoJson.h>
-#include <SPIFFS.h>
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
 #include <time.h>
 #include <Preferences.h>
 #include "arduino_json_psram.h"
+#include "src/framework/board/board.h"
 
-static const char* TAG MIMI_TAG_UNUSED = "tools";
+#define TAG  "tools"
 
 // ── Tool Registry Implementation ───────────────────────────────
 
 MimiToolRegistry::MimiToolRegistry() : _toolCount(0) {}
 
-bool MimiToolRegistry::begin(MimiProxy* proxy) {
+bool MimiToolRegistry::begin(FileSystem *file_system, MimiProxy* proxy) {
+    _file_system = file_system;
     _toolCount = 0;
     registerBuiltinTools();
     buildToolsJson();
@@ -395,7 +396,8 @@ bool tool_read_file_execute(const char* input_json, char* output, size_t output_
         return false;
     }
 
-    File f = SPIFFS.open(path, "r");
+    FileSystem *file_system = Board::GetInstance().GetFileSystem();
+    File f = file_system->OpenFile(path, "r");
     if (!f) {
         snprintf(output, output_size, "Error: file not found: %s", path);
         return false;
@@ -430,7 +432,8 @@ bool tool_write_file_execute(const char* input_json, char* output, size_t output
         return false;
     }
 
-    File f = SPIFFS.open(path, "w");
+    FileSystem *file_system = Board::GetInstance().GetFileSystem();
+    File f = file_system->OpenFile(path, "w");
     if (!f) {
         snprintf(output, output_size, "Error: cannot open file: %s", path);
         return false;
@@ -464,7 +467,8 @@ bool tool_edit_file_execute(const char* input_json, char* output, size_t output_
         return false;
     }
 
-    File f = SPIFFS.open(path, "r");
+    FileSystem *file_system = Board::GetInstance().GetFileSystem();
+    File f = file_system->OpenFile(path, "r");
     if (!f) {
         snprintf(output, output_size, "Error: file not found: %s", path);
         return false;
@@ -481,7 +485,7 @@ bool tool_edit_file_execute(const char* input_json, char* output, size_t output_
 
     String result = fileContent.substring(0, pos) + String(newStr) + fileContent.substring(pos + strlen(oldStr));
 
-    f = SPIFFS.open(path, "w");
+    f = file_system->OpenFile(path, "w");
     if (!f) {
         snprintf(output, output_size, "Error: cannot write file: %s", path);
         return false;
@@ -500,7 +504,8 @@ bool tool_list_dir_execute(const char* input_json, char* output, size_t output_s
     deserializeJson(doc, input_json);
     const char* prefix = doc["prefix"] | (const char*)nullptr;
 
-    File root = SPIFFS.open("/");
+    FileSystem *file_system = Board::GetInstance().GetFileSystem();
+    File root = file_system->OpenFile("/");
     if (!root) {
         snprintf(output, output_size, "Error: cannot open SPIFFS");
         return false;
