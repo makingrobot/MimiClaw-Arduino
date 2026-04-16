@@ -269,6 +269,7 @@ void Application::OnStateChanged() {
 
 void Application::Reboot() {
     Log::Info(TAG, "Rebooting..." );
+    // 收尾工作
     esp_restart();
 }
 

@@ -269,6 +269,8 @@ String MimiLLM::httpDirect(const String& postData) {
         http.addHeader("anthropic-version", MIMI_LLM_API_VERSION);
     }
 
+    Serial.println(postData);
+    
     int httpCode = http.POST(postData);
     String response;
     

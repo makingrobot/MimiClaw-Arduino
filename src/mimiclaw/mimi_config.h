@@ -226,14 +226,18 @@
 #define MIMI_TAG_UNUSED __attribute__((unused))
 
 #include "src/framework/sys/log.h"
+
 // ── Logging helpers ────────────────────────────────────────────
+#if CONFIG_USE_ESP_LOG==1
+#define MIMI_LOGI(tag, fmt, ...) log_i("[%s] " fmt, tag, ##__VA_ARGS__)
+#define MIMI_LOGW(tag, fmt, ...) log_w("[%s] " fmt, tag, ##__VA_ARGS__)
+#define MIMI_LOGE(tag, fmt, ...) log_e("[%s] " fmt, tag, ##__VA_ARGS__)
+#define MIMI_LOGD(tag, fmt, ...) log_d("[%s] " fmt, tag, ##__VA_ARGS__)
+#else
 #define MIMI_LOGI(tag, fmt, ...) Log::Info(tag, fmt, ##__VA_ARGS__)
 #define MIMI_LOGW(tag, fmt, ...) Log::Warn(tag,  fmt, ##__VA_ARGS__)
 #define MIMI_LOGE(tag, fmt, ...) Log::Error(tag, fmt, ##__VA_ARGS__)
 #define MIMI_LOGD(tag, fmt, ...) Log::Debug(tag, fmt, ##__VA_ARGS__)
-// #define MIMI_LOGI(tag, fmt, ...) log_i(tag, fmt, ##__VA_ARGS__)
-// #define MIMI_LOGW(tag, fmt, ...) log_w("[%s] " fmt, tag, ##__VA_ARGS__)
-// #define MIMI_LOGE(tag, fmt, ...) log_e("[%s] " fmt, tag, ##__VA_ARGS__)
-// #define MIMI_LOGD(tag, fmt, ...) log_d("[%s] " fmt, tag, ##__VA_ARGS__)
+#endif
 
 #endif // MIMI_CONFIG_H

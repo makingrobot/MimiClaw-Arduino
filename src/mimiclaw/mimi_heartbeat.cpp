@@ -57,7 +57,6 @@ bool MimiHeartbeat::sendHeartbeat() {
     strncpy(msg.channel, MIMI_CHAN_SYSTEM, sizeof(msg.channel) - 1);
     strncpy(msg.chat_id, "heartbeat", sizeof(msg.chat_id) - 1);
     msg.content = strdup(HEARTBEAT_PROMPT);
-
     if (!msg.content) {
         MIMI_LOGE(TAG, "Failed to allocate heartbeat prompt");
         return false;

@@ -10,9 +10,9 @@
 #include <string>
 #include <Arduino.h>
 
-Log::Level Log::level = Log::WARN;
+Log::Level Log::level = (Log::Level)CONFIG_LOG_LEVEL;
 
-const int LOG_BUFFER_LEN = 128;
+const int LOG_BUFFER_LEN = 256;
 
 void Log::Info(const char* tag, const char* format, ...) {
     if (Log::level >= Log::INFO)

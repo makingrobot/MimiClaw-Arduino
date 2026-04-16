@@ -25,6 +25,8 @@
 #include "mimi_heartbeat.h"
 #include "mimi_skills.h"
 #include "mimi_context.h"
+#include "mimi_serial_cli.h"
+#include "mimi_websearch.h"
 #include "mimi_feishu.h"
 #include "src/framework/app/application.h"
 
@@ -55,12 +57,12 @@ public:
     virtual void OnLoop() override;
 
     // --- Configuration setters (can be called before begin()) ---
-    void setWiFi(const char* ssid, const char* password);
+    void setWiFiCredentials(const char* ssid, const char* password);
     void setTelegramToken(const char* token);
-    void setApiKey(const char* key);
-    void setModel(const char* model);
-    void setModelProvider(const char* provider);  // "anthropic" or "openai"
-    void setApiUrl(const char* url);              // Custom API endpoint URL
+    void setLLMApiKey(const char* key);
+    void setLLMModel(const char* model);
+    void setLLMProvider(const char* provider);  // "anthropic" or "openai"
+    void setLLMApiUrl(const char* url);              // Custom API endpoint URL
     void setProxy(const char* host, uint16_t port, const char* type = "http");
     void clearProxy();
     void setSearchKey(const char* key);
@@ -71,9 +73,11 @@ public:
     bool isWiFiConnected();
     const char* getIP();
     
-    bool pushMessage(const MimiMsg* msg) {
-        return _bus.pushInbound(msg);
-    }
+    bool pushMessage(const MimiMsg* msg);
+
+    bool heartbeatTrigger();
+
+    bool searchWeb(const char* query, char* output, size_t output_size);
 
     // --- Memory ---
     MimiMemory& memory() { return _memory; }
@@ -85,6 +89,9 @@ public:
     // --- Cron ---
     MimiCron& cron() { return _cron; }
 
+    // --- Skills ---
+    MimiSkills& skills() { return _skills; }
+    
 private:
     MimiBus _bus;
     MimiWiFi _wifi;
@@ -100,6 +107,8 @@ private:
     MimiHeartbeat _heartbeat;
     MimiSkills _skills;
     MimiContext _context;
+    MimiSerialCli _serial_cli;
+    MimiWebsearch _websearch;
     MimiFeishu _feishu;
 
     bool _started;

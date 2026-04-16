@@ -112,18 +112,20 @@ bool MimiApplication::OnInit() {
         return false;
     }
 
+    _websearch.init();
+    
     MIMI_LOGI(TAG, "All subsystems initialized");
 
     // use mimi_secrets.h config.
-    setWiFi(MIMI_WIFI_SSID, MIMI_WIFI_PASS);
+    setWiFiCredentials(MIMI_WIFI_SSID, MIMI_WIFI_PASS);
 
     setFeishuCredentials(MIMI_FEISHU_APP_ID, MIMI_FEISHU_APP_SECRET);
 
     // LLM model
-    setModelProvider("openai");
-    setApiUrl(MIMI_OPENAI_API_URL);
-    setModel(MIMI_OPENAI_MODEL);
-    setApiKey(MIMI_OPENAI_API_KEY);
+    setLLMProvider("openai");
+    setLLMApiUrl(MIMI_OPENAI_API_URL);
+    setLLMModel(MIMI_OPENAI_MODEL);
+    setLLMApiKey(MIMI_OPENAI_API_KEY);
 
     // start
     bool state = Start();
@@ -209,7 +211,8 @@ bool MimiApplication::Start() {
     _cron.start();
     _heartbeat.start();
     _ws.start();
-
+    _serial_cli.start();
+    
     _started = true;
     MIMI_LOGI(TAG, "All services started!");
     return true;
@@ -221,7 +224,7 @@ void MimiApplication::OnLoop() {
 
 // --- Configuration setters ---
 
-void MimiApplication::setWiFi(const char* ssid, const char* password) {
+void MimiApplication::setWiFiCredentials(const char* ssid, const char* password) {
     _wifi.setCredentials(ssid, password);
 }
 
@@ -229,19 +232,19 @@ void MimiApplication::setTelegramToken(const char* token) {
     _telegram.setToken(token);
 }
 
-void MimiApplication::setApiKey(const char* key) {
+void MimiApplication::setLLMApiKey(const char* key) {
     _llm.setApiKey(key);
 }
 
-void MimiApplication::setModel(const char* model) {
+void MimiApplication::setLLMModel(const char* model) {
     _llm.setModel(model);
 }
 
-void MimiApplication::setModelProvider(const char* provider) {
+void MimiApplication::setLLMProvider(const char* provider) {
     _llm.setProvider(provider);
 }
 
-void MimiApplication::setApiUrl(const char* url) {
+void MimiApplication::setLLMApiUrl(const char* url) {
     _llm.setApiUrl(url);
 }
 
@@ -251,10 +254,6 @@ void MimiApplication::setProxy(const char* host, uint16_t port, const char* type
 
 void MimiApplication::clearProxy() {
     _proxy.clear();
-}
-
-void MimiApplication::setSearchKey(const char* key) {
-    tool_web_search_set_key(key);
 }
 
 void MimiApplication::setTimezone(const char* tz) {
@@ -272,4 +271,20 @@ const char* MimiApplication::getIP() {
 
 void MimiApplication::setFeishuCredentials(const char* app_id, const char* app_secret) {
     _feishu.setCredentials(app_id, app_secret);
+}
+
+void MimiApplication::setSearchKey(const char* key) {
+    _websearch.setKey(key);
+}
+
+bool MimiApplication::pushMessage(const MimiMsg* msg) {
+    return _bus.pushInbound(msg);
+}
+
+bool MimiApplication::heartbeatTrigger() {
+    return _heartbeat.trigger();
+}
+
+bool MimiApplication::searchWeb(const char* query, char* output, size_t output_size) {
+    return _websearch.search(query, output, output_size);
 }

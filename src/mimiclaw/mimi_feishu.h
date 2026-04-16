@@ -6,27 +6,11 @@
 
 #include <Arduino.h>
 #include "mimi_bus.h"
-#include "cJSON.h"
 #include "esp_websocket_client.h"
+#include <ArduinoJson.h>
+#include "feishu_pack.h"
 
 class MimiProxy; // forward
-
-/* ── Feishu WS frame (protobuf) ────────────────────────────── */
-typedef struct {
-    char key[32];
-    char value[128];
-} ws_header_t;
-
-typedef struct {
-    uint64_t seq_id;
-    uint64_t log_id;
-    int32_t service;
-    int32_t method;
-    ws_header_t headers[16];
-    size_t header_count;
-    const uint8_t *payload;
-    size_t payload_len;
-} ws_frame_t;
 
 class MimiFeishu {
 public:
@@ -39,8 +23,8 @@ public:
 
     bool sendMessage(const char* chat_id, const char* text);
 
-    void handleWsFrame(const uint8_t *buf, size_t len);
     void setWsConnected(bool connected) { _ws_connected = connected; }
+    void handleWsFrame(const uint8_t *buf, size_t len);
 
 private:
     char _app_id[64];
@@ -58,8 +42,10 @@ private:
     bool dedupCheckAndRecord(const char *message_id);
     bool getTenantToken();
     bool pullWsConfig();
-    void processWsEvent(const char *json, size_t len);
-    void handleMessage(cJSON *event);
+
+    void handleWsEvent(const char *json, size_t len);
+    void handleMessage(const JsonObject& event_obj);
+    
     bool replyMessage(const char *message_id, const char *text);
     int sendWsFrame(const ws_frame_t *f, const uint8_t *payload, size_t payload_len, int timeout_ms);
 

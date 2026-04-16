@@ -36,6 +36,7 @@
 #define LV_LVGL_H_INCLUDE_SIMPLE            0
 
 // 使用ESP_LOG
+#define CONFIG_LOG_LEVEL                    3  //1:info, 2:warn, 3:debug
 #define CONFIG_USE_ESP_LOG                  0
 
 #endif //_APP_CONFIG_H

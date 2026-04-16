@@ -9,6 +9,7 @@
 - **双 LLM 支持** — 同时支持 Anthropic Claude 和 OpenAI/Deepseek GPT 模型
 - **Telegram 机器人** — 长轮询方式集成 Telegram Bot
 - **Feishu 机器人** — 长轮询方式集成 飞书 Bot
+- **串口控制台** — 集成串口交互控制台界面
 - **WebSocket 服务器** — 实时通信网关
 - **持久化记忆** — 基于 SPIFFS 的长期记忆与每日笔记
 - **会话管理** — 按聊天分组的对话历史（JSONL 格式）
@@ -28,13 +29,14 @@
 
 通过 Arduino 库管理器安装：
 
-- **ArduinoJson** v7.0+，作者 Benoit Blanchon
-- **WebSockets** v2.4+，作者 Markus Sattler (links2004)
+- **ArduinoJson** v7.0+，https://github.com/bblanchon/ArduinoJson
+- **WebSockets** v2.6+，https://github.com/Links2004/arduinoWebSockets
+- **ESP32Console** v1.3, https://github.com/jbtronics/ESP32Console
 
 ## 快速开始
 
 1. 安装依赖库（ArduinoJson、WebSockets）
-2. 使用 "ESP32 Sketch Data Upload" 工具将 `spiffs-data/` 文件夹上传到 SPIFFS
+2. 将 `persist-data/` 文件夹上传到存储中
 3. 在mimi_secrets.h中填写你的 WiFi、Feishu、Telegram 和 LLM API 凭据
 4. 在boards文件夹下创建你的开发板目录，新建开发板类（从Board类继承），实现板上相关硬件驱动
 5. 编写相关自定义工具

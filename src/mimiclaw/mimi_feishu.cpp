@@ -10,15 +10,16 @@
 #include "esp_crt_bundle.h"
 #include "esp_timer.h"
 #include "esp_event.h"
-#include "cJSON.h"
 
 #include <Preferences.h>
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
+#include <ArduinoJson.h>
+#include "arduino_json_psram.h"
+#include "feishu_pack.h"
 
 /**
  * TODO: Refactor  
- * 1. cJSON -> ArduinoJson lib
  * 3. esp_web_socket  -> WebSockets lib
  */ 
 
@@ -70,174 +71,10 @@ bool MimiFeishu::dedupCheckAndRecord(const char *message_id)
     return false;
 }
 
-/* ── HTTP response accumulator ─────────────────────────────── */
-typedef struct {
-    char *buf;
-    size_t len;
-    size_t cap;
-} http_resp_t;
-
-static bool pb_read_varint(const uint8_t *buf, size_t len, size_t *pos, uint64_t *out)
-{
-    uint64_t v = 0;
-    int shift = 0;
-    while (*pos < len && shift <= 63) {
-        uint8_t b = buf[(*pos)++];
-        v |= ((uint64_t)(b & 0x7F)) << shift;
-        if ((b & 0x80) == 0) {
-            *out = v;
-            return true;
-        }
-        shift += 7;
-    }
-    return false;
-}
-
-static bool pb_skip_field(const uint8_t *buf, size_t len, size_t *pos, uint8_t wire_type)
-{
-    uint64_t n = 0;
-    switch (wire_type) {
-        case 0:
-            return pb_read_varint(buf, len, pos, &n);
-        case 1:
-            if (*pos + 8 > len) return false;
-            *pos += 8;
-            return true;
-        case 2:
-            if (!pb_read_varint(buf, len, pos, &n)) return false;
-            if (*pos + (size_t)n > len) return false;
-            *pos += (size_t)n;
-            return true;
-        case 5:
-            if (*pos + 4 > len) return false;
-            *pos += 4;
-            return true;
-        default:
-            return false;
-    }
-}
-
-static bool pb_parse_header_msg(const uint8_t *buf, size_t len, ws_header_t *h)
-{
-    memset(h, 0, sizeof(*h));
-    size_t pos = 0;
-    while (pos < len) {
-        uint64_t tag = 0, slen = 0;
-        if (!pb_read_varint(buf, len, &pos, &tag)) return false;
-        uint32_t field = (uint32_t)(tag >> 3);
-        uint8_t wt = (uint8_t)(tag & 0x07);
-        if (wt != 2) {
-            if (!pb_skip_field(buf, len, &pos, wt)) return false;
-            continue;
-        }
-        if (!pb_read_varint(buf, len, &pos, &slen)) return false;
-        if (pos + (size_t)slen > len) return false;
-        if (field == 1) {
-            size_t n = (slen < sizeof(h->key) - 1) ? (size_t)slen : sizeof(h->key) - 1;
-            memcpy(h->key, buf + pos, n);
-            h->key[n] = '\0';
-        } else if (field == 2) {
-            size_t n = (slen < sizeof(h->value) - 1) ? (size_t)slen : sizeof(h->value) - 1;
-            memcpy(h->value, buf + pos, n);
-            h->value[n] = '\0';
-        }
-        pos += (size_t)slen;
-    }
-    return true;
-}
-
-static bool pb_parse_frame(const uint8_t *buf, size_t len, ws_frame_t *f)
-{
-    memset(f, 0, sizeof(*f));
-    size_t pos = 0;
-    while (pos < len) {
-        uint64_t tag = 0, v = 0, blen = 0;
-        if (!pb_read_varint(buf, len, &pos, &tag)) return false;
-        uint32_t field = (uint32_t)(tag >> 3);
-        uint8_t wt = (uint8_t)(tag & 0x07);
-        if (field == 1 && wt == 0) {
-            if (!pb_read_varint(buf, len, &pos, &f->seq_id)) return false;
-        } else if (field == 2 && wt == 0) {
-            if (!pb_read_varint(buf, len, &pos, &f->log_id)) return false;
-        } else if (field == 3 && wt == 0) {
-            if (!pb_read_varint(buf, len, &pos, &v)) return false;
-            f->service = (int32_t)v;
-        } else if (field == 4 && wt == 0) {
-            if (!pb_read_varint(buf, len, &pos, &v)) return false;
-            f->method = (int32_t)v;
-        } else if (field == 5 && wt == 2) {
-            if (!pb_read_varint(buf, len, &pos, &blen)) return false;
-            if (pos + (size_t)blen > len) return false;
-            if (f->header_count < 16) {
-                pb_parse_header_msg(buf + pos, (size_t)blen, &f->headers[f->header_count++]);
-            }
-            pos += (size_t)blen;
-        } else if (field == 8 && wt == 2) {
-            if (!pb_read_varint(buf, len, &pos, &blen)) return false;
-            if (pos + (size_t)blen > len) return false;
-            f->payload = buf + pos;
-            f->payload_len = (size_t)blen;
-            pos += (size_t)blen;
-        } else {
-            if (!pb_skip_field(buf, len, &pos, wt)) return false;
-        }
-    }
-    return true;
-}
-
-static const char *frame_header_value(const ws_frame_t *f, const char *key)
-{
-    for (size_t i = 0; i < f->header_count; i++) {
-        if (strcmp(f->headers[i].key, key) == 0) {
-            return f->headers[i].value;
-        }
-    }
-    return NULL;
-}
-
-static bool pb_write_varint(uint8_t *buf, size_t cap, size_t *pos, uint64_t value)
-{
-    do {
-        if (*pos >= cap) return false;
-        uint8_t byte = (uint8_t)(value & 0x7F);
-        value >>= 7;
-        if (value) byte |= 0x80;
-        buf[(*pos)++] = byte;
-    } while (value);
-    return true;
-}
-
-static bool pb_write_tag(uint8_t *buf, size_t cap, size_t *pos, uint32_t field, uint8_t wt)
-{
-    return pb_write_varint(buf, cap, pos, ((uint64_t)field << 3) | wt);
-}
-
-static bool pb_write_bytes(uint8_t *buf, size_t cap, size_t *pos, uint32_t field, const uint8_t *data, size_t len)
-{
-    if (!pb_write_tag(buf, cap, pos, field, 2)) return false;
-    if (!pb_write_varint(buf, cap, pos, len)) return false;
-    if (*pos + len > cap) return false;
-    memcpy(buf + *pos, data, len);
-    *pos += len;
-    return true;
-}
-
-static bool pb_write_string(uint8_t *buf, size_t cap, size_t *pos, uint32_t field, const char *s)
-{
-    return pb_write_bytes(buf, cap, pos, field, (const uint8_t *)s, strlen(s));
-}
-
-static bool ws_encode_header(uint8_t *dst, size_t cap, size_t *out_len, const char *key, const char *value)
-{
-    size_t pos = 0;
-    if (!pb_write_string(dst, cap, &pos, 1, key)) return false;
-    if (!pb_write_string(dst, cap, &pos, 2, value)) return false;
-    *out_len = pos;
-    return true;
-}
-
 int MimiFeishu::sendWsFrame(const ws_frame_t *f, const uint8_t *payload, size_t payload_len, int timeout_ms)
 {
+    MIMI_LOGD(TAG, "call sendWsFrame...");
+
     uint8_t out[2048];
     size_t pos = 0;
     if (!pb_write_tag(out, sizeof(out), &pos, 1, 0) || !pb_write_varint(out, sizeof(out), &pos, f->seq_id)) return -1;
@@ -270,40 +107,43 @@ bool MimiFeishu::getTenantToken()
         return true; //ESP_OK;
     }
 
-    cJSON *body = cJSON_CreateObject();
-    cJSON_AddStringToObject(body, "app_id", _app_id);
-    cJSON_AddStringToObject(body, "app_secret", _app_secret);
-    char *json_str = cJSON_PrintUnformatted(body);
-    cJSON_Delete(body);
-    if (!json_str) return false; //ESP_ERR_NO_MEM;
+    // 请求处理
+    JsonDocument request(&spiram_allocator);
+    request["app_id"] = _app_id;
+    request["app_secret"] = _app_secret;
+    
+    String json_str;
+    serializeJson(request, json_str);
 
-    String result = httpCall(FEISHU_AUTH_URL, "POST", json_str, 10000);
-    free(json_str);
+    String result = httpCall(FEISHU_AUTH_URL, "POST", json_str.c_str(), 10000);
     if (result.isEmpty()) {
+        MIMI_LOGE(TAG, "No content response.");
         return false;
     }
 
-    cJSON *root = cJSON_Parse(result.c_str());
-    if (!root) { MIMI_LOGE(TAG, "Failed to parse token response"); return false; /*ESP_FAIL;*/ }
+    // 响应处理
+    JsonDocument response(&spiram_allocator);
+    if (deserializeJson(response, result)) {
+        MIMI_LOGE(TAG, "Failed to parse token response"); 
+        return false; /*ESP_FAIL;*/
+    }
 
-    cJSON *code = cJSON_GetObjectItem(root, "code");
-    if (!code || code->valueint != 0) {
-        MIMI_LOGE(TAG, "Token request failed: code=%d", code ? code->valueint : -1);
-        cJSON_Delete(root);
+    int code = response["code"].as<int>();
+    if ( code != 0) {
+        MIMI_LOGE(TAG, "Token request failed: code=%d", code);
         return false; //ESP_FAIL;
     }
 
-    cJSON *token = cJSON_GetObjectItem(root, "tenant_access_token");
-    cJSON *expire = cJSON_GetObjectItem(root, "expire");
+    if (response.containsKey("tenant_access_token")) {
+        const char *token = response["tenant_access_token"].as<const char *>();
+        strncpy(_tenant_token, token, sizeof(_tenant_token) - 1);
 
-    if (token && cJSON_IsString(token)) {
-        strncpy(_tenant_token, token->valuestring, sizeof(_tenant_token) - 1);
-        _token_expire_time = now + (expire ? expire->valueint : 7200) - 300;
-        MIMI_LOGI(TAG, "Got tenant access token (expires in %ds)",
-                 expire ? expire->valueint : 7200);
+        int expire = response.containsKey("expire") ? response["expire"].as<int>() : 7200;
+        _token_expire_time = now + expire - 300;
+
+        MIMI_LOGI(TAG, "Got tenant access token (expires in %ds)", expire );
     }
 
-    cJSON_Delete(root);
     return true;
 }
 
@@ -321,18 +161,22 @@ String MimiFeishu::apiCall(const char *url, const char *method, const char *post
     http.setConnectTimeout(timeout);
 
     if (!http.begin(*client, url)) {
+        MIMI_LOGE(TAG, "httpclient begin failure.");
         delete client;
         return "";
     }
 
-    char auth_header[600] = {0};
-    snprintf(auth_header, sizeof(auth_header), "Bearer %s", _tenant_token);
+    String auth_header = "Bearer " + String(_tenant_token);
     http.addHeader("Authorization", auth_header);
-    MIMI_LOGI(TAG, "API auth header: %s", auth_header);
-    MIMI_LOGI(TAG, "API post data: %s", post_data);
+
+    MIMI_LOGI(TAG, "Request url: %s", url);
+    MIMI_LOGI(TAG, "Authheader: %s", auth_header.c_str());
+    if (post_data) {
+        MIMI_LOGI(TAG, "Postdata: %s", post_data);
+    }
 
     int httpCode;
-    if (post_data) {
+    if (strcmp(method, "POST")==0) {
         http.addHeader("Content-Type", "application/json; charset=utf-8");
         httpCode = http.POST(post_data);
     } else {
@@ -369,7 +213,7 @@ String MimiFeishu::httpCall(const char *url, const char *method, const char *pos
     http.addHeader("locale", "zh");
 
     int httpCode;
-    if (post_data) {
+    if (strcmp(method, "POST")==0) {
         http.addHeader("Content-Type", "application/json; charset=utf-8");
         httpCode = http.POST(post_data);
     } else {
@@ -415,71 +259,85 @@ static bool parse_query_param(const char *url, const char *key, char *out, size_
 
 bool MimiFeishu::pullWsConfig()
 {
-    cJSON *body = cJSON_CreateObject();
-    cJSON_AddStringToObject(body, "AppID", _app_id);
-    cJSON_AddStringToObject(body, "AppSecret", _app_secret);
-    char *json_str = cJSON_PrintUnformatted(body);
-    cJSON_Delete(body);
-    if (!json_str) return false; //ESP_ERR_NO_MEM;
+    // 请求处理
+    JsonDocument request(&spiram_allocator);
+    request["AppID"] = _app_id;
+    request["AppSecret"] = _app_secret;
 
-    String result = httpCall(FEISHU_WS_CONFIG_URL, "POST", json_str, 15000);
-    free(json_str);
+    String json_str;
+    serializeJson(request, json_str);
+
+    String result = httpCall(FEISHU_WS_CONFIG_URL, "POST", json_str.c_str(), 15000);
     if (result.isEmpty()) {
         return false;
     }
     
-    cJSON *root = cJSON_Parse(result.c_str());
-    if (!root) return false; //ESP_FAIL;
-
-    cJSON *code = cJSON_GetObjectItem(root, "code");
-    cJSON *data = cJSON_GetObjectItem(root, "data");
-    cJSON *url = data ? cJSON_GetObjectItem(data, "URL") : NULL;
-    cJSON *ccfg = data ? cJSON_GetObjectItem(data, "ClientConfig") : NULL;
-    if (!code || code->valueint != 0 || !url || !cJSON_IsString(url)) {
-        MIMI_LOGE(TAG, "Invalid WS config response");
-        cJSON_Delete(root);
+    // 响应处理
+    JsonDocument response(&spiram_allocator);
+    if (deserializeJson(response, result)) {
+        MIMI_LOGW(TAG, "Failed to parse response JSON");
         return false; //ESP_FAIL;
     }
 
-    strncpy(_ws_url, url->valuestring, sizeof(_ws_url) - 1);
+    int code = response["code"].as<int>();
+    const char *url = response["data"]["URL"] | (const char *)nullptr;
+    JsonObject ccfg = response["data"]["ClientConfig"];
+
+    if (code != 0 || !url) {
+        MIMI_LOGE(TAG, "Invalid WS config response");
+        return false; //ESP_FAIL;
+    }
+
+    strncpy(_ws_url, url, sizeof(_ws_url) - 1);
     char sid[24] = {0};
     if (parse_query_param(_ws_url, "service_id", sid, sizeof(sid))) {
         _ws_service_id = atoi(sid);
     }
+
     if (ccfg) {
-        cJSON *pi = cJSON_GetObjectItem(ccfg, "PingInterval");
-        cJSON *ri = cJSON_GetObjectItem(ccfg, "ReconnectInterval");
-        cJSON *rn = cJSON_GetObjectItem(ccfg, "ReconnectNonce");
-        if (pi && cJSON_IsNumber(pi)) _ws_ping_interval_ms = pi->valueint * 1000;
-        if (ri && cJSON_IsNumber(ri)) _ws_reconnect_interval_ms = ri->valueint * 1000;
-        if (rn && cJSON_IsNumber(rn)) _ws_reconnect_nonce_ms = rn->valueint * 1000;
+        if (ccfg.containsKey("PingInterval")) _ws_ping_interval_ms = ccfg["PingInterval"].as<int>() * 1000;
+        if (ccfg.containsKey("ReconnectInterval")) _ws_reconnect_interval_ms = ccfg["ReconnectInterval"].as<int>() * 1000;
+        if (ccfg.containsKey("ReconnectNonce")) _ws_reconnect_nonce_ms = ccfg["ReconnectNonce"].as<int>() * 1000;
     }
-    cJSON_Delete(root);
+    
     MIMI_LOGI(TAG, "WS config ready: service_id=%d ping=%dms", _ws_service_id, _ws_ping_interval_ms);
     return true; //ESP_OK;
 }
 
-void MimiFeishu::processWsEvent(const char *json, size_t len)
+/**
+ * WS包处理 第二步
+ */
+void MimiFeishu::handleWsEvent(const char *json, size_t len)
 {
-    cJSON *root = cJSON_ParseWithLength(json, len);
-    if (!root) return;
-    cJSON *event = cJSON_GetObjectItem(root, "event");
-    cJSON *header = cJSON_GetObjectItem(root, "header");
-    if (event && header) {
-        cJSON *event_type = cJSON_GetObjectItem(header, "event_type");
-        if (event_type && cJSON_IsString(event_type) &&
-            strcmp(event_type->valuestring, "im.message.receive_v1") == 0) {
-            handleMessage(event);
-        }
-    } else if (event) {
-        handleMessage(event);
+    MIMI_LOGD(TAG, "step2: handle websocket event...");
+
+    String json_str = String(json, len);
+    JsonDocument doc(&spiram_allocator);
+    if (deserializeJson(doc, json_str)) {
+        MIMI_LOGW(TAG, "Failed to parse ws event JSON");
+        return;
     }
-    cJSON_Delete(root);
+
+    JsonObject event_obj = doc["event"];
+    JsonObject header_obj = doc["header"];
+    if (!event_obj.isNull() && !header_obj.isNull()) {
+        const char *event_type = header_obj["event_type"] | (const char *)nullptr;
+        if (event_type && strcmp(event_type, "im.message.receive_v1") == 0) {
+            handleMessage(event_obj);
+        }
+    } else if (!event_obj.isNull()) {
+        handleMessage(event_obj);
+    }
 }
 
+/**
+ * Ws包处理第一步
+ */
 void MimiFeishu::handleWsFrame(const uint8_t *buf, size_t len)
 {
-    ws_frame_t frame = {0};
+    MIMI_LOGD(TAG, "step1: handle websocket frame...");
+
+    ws_frame_t frame;
     if (!pb_parse_frame(buf, len, &frame)) {
         MIMI_LOGW(TAG, "WS frame parse failed");
         return;
@@ -488,12 +346,14 @@ void MimiFeishu::handleWsFrame(const uint8_t *buf, size_t len)
     const char *type = frame_header_value(&frame, "type");
     if (frame.method == 0) {
         if (type && strcmp(type, "pong") == 0 && frame.payload && frame.payload_len > 0) {
-            cJSON *cfg = cJSON_ParseWithLength((const char *)frame.payload, frame.payload_len);
-            if (cfg) {
-                cJSON *pi = cJSON_GetObjectItem(cfg, "PingInterval");
-                if (pi && cJSON_IsNumber(pi)) _ws_ping_interval_ms = pi->valueint * 1000;
-                cJSON_Delete(cfg);
+            String payload_str = String((const char *)frame.payload, frame.payload_len);
+            JsonDocument doc(&spiram_allocator);
+            if (deserializeJson(doc, payload_str)) {
+                MIMI_LOGW(TAG, "Failed to parse payload JSON");
+                return;
             }
+
+            if (doc.containsKey("PingInterval")) _ws_ping_interval_ms = doc["PingInterval"].as<int>() * 1000;
         }
         return;
     }
@@ -501,16 +361,22 @@ void MimiFeishu::handleWsFrame(const uint8_t *buf, size_t len)
     if (!frame.payload || frame.payload_len == 0) return;
 
     int code = 200;
-    processWsEvent((const char *)frame.payload, frame.payload_len);
+    handleWsEvent((const char *)frame.payload, frame.payload_len);
 
+    // 发送应答
     char ack[32];
     int ack_len = snprintf(ack, sizeof(ack), "{\"code\":%d}", code);
     ws_frame_t resp = frame;
     sendWsFrame(&resp, (const uint8_t *)ack, (size_t)ack_len, 1000);
 }
 
+/**
+ * WS事件处理
+ */
 static void feishu_ws_event_handler(void *arg, esp_event_base_t base, int32_t event_id, void *event_data)
 {
+    //MIMI_LOGD(TAG, "step0: websocket event callback...");
+
     (void)base;
     MimiFeishu *self = (MimiFeishu*)arg;
     esp_websocket_event_data_t *e = (esp_websocket_event_data_t *)event_data;
@@ -565,28 +431,25 @@ static void feishu_ws_event_handler(void *arg, esp_event_base_t base, int32_t ev
  * URL verification challenge:
  * { "challenge": "xxx", "token": "yyy", "type": "url_verification" }
  */
-
-void MimiFeishu::handleMessage(cJSON *event)
+/**
+ * WS包处理 第三步
+ */
+void MimiFeishu::handleMessage(const JsonObject& event_obj)
 {
-    cJSON *message = cJSON_GetObjectItem(event, "message");
-    if (!message) return;
+    MIMI_LOGD(TAG, "step3: handle message...");
 
-    cJSON *message_id_j = cJSON_GetObjectItem(message, "message_id");
-    cJSON *chat_id_j    = cJSON_GetObjectItem(message, "chat_id");
-    cJSON *chat_type_j  = cJSON_GetObjectItem(message, "chat_type");
-    cJSON *msg_type_j   = cJSON_GetObjectItem(message, "message_type");
-    cJSON *content_j    = cJSON_GetObjectItem(message, "content");
+    String str;
+    serializeJson(event_obj, str);
+    MIMI_LOGI(TAG, "Message: %s", str.c_str());
 
-    if (!chat_id_j || !cJSON_IsString(chat_id_j)) return;
-    if (!content_j || !cJSON_IsString(content_j)) return;
-
-    const char *message_id = cJSON_IsString(message_id_j) ? message_id_j->valuestring : "";
-    const char *chat_id    = chat_id_j->valuestring;
-    const char *chat_type  = cJSON_IsString(chat_type_j) ? chat_type_j->valuestring : "p2p";
-    const char *msg_type   = cJSON_IsString(msg_type_j) ? msg_type_j->valuestring : "text";
-
+    const char *message_id = event_obj["message"]["message_id"] | (const char *)nullptr;
+    const char *chat_type  = event_obj["message"]["chat_type"] | (const char *)"p2p";
+    const char *msg_type   = event_obj["message"]["message_type"] | (const char *)"text";
+    const char *chat_id    = event_obj["message"]["chat_id"] | (const char *)nullptr;
+    const char *content    = event_obj["message"]["content"] | (const char *)nullptr;
+    
     /* Deduplication */
-    if (message_id[0] && dedupCheckAndRecord(message_id)) {
+    if (message_id && dedupCheckAndRecord(message_id)) {
         MIMI_LOGD(TAG, "Duplicate message %s, skipping", message_id);
         return;
     }
@@ -597,20 +460,24 @@ void MimiFeishu::handleMessage(cJSON *event)
         return;
     }
 
+    if (!content) {
+        MIMI_LOGI(TAG, "No content.");
+        return;
+    }
+
     /* Parse the content JSON to extract text */
-    cJSON *content_obj = cJSON_Parse(content_j->valuestring);
-    if (!content_obj) {
+    String content_str = String(content);
+    JsonDocument content_doc(&spiram_allocator);
+    if (deserializeJson(content_doc, content_str)) {
         MIMI_LOGW(TAG, "Failed to parse message content JSON");
         return;
     }
 
-    cJSON *text_j = cJSON_GetObjectItem(content_obj, "text");
-    if (!text_j || !cJSON_IsString(text_j)) {
-        cJSON_Delete(content_obj);
+    const char *text = content_doc["text"] | (const char *)nullptr;
+    if (!text) {
+        MIMI_LOGW(TAG, "No text node.");
         return;
     }
-
-    const char *text = text_j->valuestring;
 
     /* Strip @bot mention prefix if present (Feishu adds @_user_1 for mentions) */
     const char *cleaned = text;
@@ -621,26 +488,19 @@ void MimiFeishu::handleMessage(cJSON *event)
     while (*cleaned == ' ' || *cleaned == '\n') cleaned++;
 
     if (cleaned[0] == '\0') {
-        cJSON_Delete(content_obj);
+        MIMI_LOGW(TAG, "No text.");
         return;
     }
 
     /* Get sender info */
     const char *sender_id = "";
-    cJSON *sender = cJSON_GetObjectItem(event, "sender");
-    if (sender) {
-        cJSON *sender_id_obj = cJSON_GetObjectItem(sender, "sender_id");
-        if (sender_id_obj) {
-            cJSON *open_id = cJSON_GetObjectItem(sender_id_obj, "open_id");
-            if (open_id && cJSON_IsString(open_id)) {
-                sender_id = open_id->valuestring;
-            }
-        }
+    JsonObject sender_obj = event_obj["sender"];
+    if (!sender_obj.isNull() && sender_obj.containsKey("sender_id")) {
+        sender_id = sender_obj["sender_id"]["open_id"] | (const char *)"";
     }
 
     MIMI_LOGI(TAG, "Message from %s in %s(%s): %.60s%s",
-             sender_id, chat_id, chat_type, cleaned,
-             strlen(cleaned) > 60 ? "..." : "");
+             sender_id, chat_id, chat_type, cleaned, strlen(cleaned) > 60 ? "..." : "");
 
     /* For p2p (DM) chats, use sender open_id as chat_id for session routing.
      * For group chats, use the chat_id (group ID).
@@ -652,18 +512,16 @@ void MimiFeishu::handleMessage(cJSON *event)
 
     /* Push to inbound message bus */
     MimiMsg msg;
+    memset(&msg, 0, sizeof(msg));
     strncpy(msg.channel, MIMI_CHAN_FEISHU, sizeof(msg.channel) - 1);
     strncpy(msg.chat_id, route_id, sizeof(msg.chat_id) - 1);
     msg.content = strdup(cleaned);
-
     if (msg.content) {
         if (!_bus->pushInbound(&msg)) {
             MIMI_LOGW(TAG, "Inbound queue full, dropping message");
             free(msg.content);
         }
     }
-
-    cJSON_Delete(content_obj);
 }
 
 /* Webhook mode intentionally disabled: Feishu channel runs in WebSocket mode only. */
@@ -817,41 +675,42 @@ bool MimiFeishu::sendMessage(const char *chat_id, const char *text)
         segment[chunk] = '\0';
 
         /* Build content JSON: {"text":"..."} */
-        cJSON *content = cJSON_CreateObject();
-        cJSON_AddStringToObject(content, "text", segment);
-        char *content_str = cJSON_PrintUnformatted(content);
-        cJSON_Delete(content);
+        JsonDocument content_obj(&spiram_allocator);
+        content_obj["text"] = segment;
+        String content_str;
+        serializeJson(content_obj, content_str);
         free(segment);
 
-        if (!content_str) { offset += chunk; all_ok = 0; continue; }
+        if (content_str.isEmpty()) { 
+            offset += chunk; 
+            all_ok = 0; 
+            continue; 
+        }
 
         /* Build message body */
-        cJSON *body = cJSON_CreateObject();
-        cJSON_AddStringToObject(body, "receive_id", chat_id);
-        cJSON_AddStringToObject(body, "msg_type", "text");
-        cJSON_AddStringToObject(body, "content", content_str);
-        free(content_str);
+        JsonDocument body_obj(&spiram_allocator);
+        body_obj["receive_id"] = chat_id;
+        body_obj["msg_type"] = "text";
+        body_obj["content"] = content_str;
 
-        char *json_str = cJSON_PrintUnformatted(body);
-        cJSON_Delete(body);
+        String json_str;
+        serializeJson( body_obj, json_str);
 
         if (json_str) {
-            String resp = apiCall(url, "POST", json_str);
-            free(json_str);
+            String resp = apiCall(url, "POST", json_str.c_str());
 
             if (!resp.isEmpty()) {
-                cJSON *root = cJSON_Parse(resp.c_str());
-                if (root) {
-                    cJSON *code = cJSON_GetObjectItem(root, "code");
-                    if (code && code->valueint != 0) {
-                        cJSON *msg = cJSON_GetObjectItem(root, "msg");
-                        MIMI_LOGW(TAG, "Send failed: code=%d, msg=%s",
-                                 code->valueint, msg ? msg->valuestring : "unknown");
+                JsonDocument response(&spiram_allocator);
+                if (!deserializeJson(response, resp)) {
+                    // 解析成功
+                    int code = response["code"].as<int>();
+                    if (code != 0) {
+                        const char *msg = response["msg"] | (const char *)"unknown";
+                        MIMI_LOGW(TAG, "Send failed: code=%d, msg=%s", code, msg);
                         all_ok = 0;
                     } else {
                         MIMI_LOGI(TAG, "Sent to %s (%d bytes)", chat_id, (int)chunk);
                     }
-                    cJSON_Delete(root);
                 }
             } else {
                 MIMI_LOGE(TAG, "Failed to send message chunk");
@@ -868,47 +727,54 @@ bool MimiFeishu::sendMessage(const char *chat_id, const char *text)
 bool MimiFeishu::replyMessage(const char *message_id, const char *text)
 {
     if (_app_id[0] == '\0' || _app_secret[0] == '\0') {
+        MIMI_LOGW(TAG, "Cannot send: no credentials configured");
         return false; //ESP_ERR_INVALID_STATE;
     }
 
     char url[256];
     snprintf(url, sizeof(url), FEISHU_REPLY_MSG_URL, message_id);
 
-    cJSON *content = cJSON_CreateObject();
-    cJSON_AddStringToObject(content, "text", text);
-    char *content_str = cJSON_PrintUnformatted(content);
-    cJSON_Delete(content);
-    if (!content_str) return false; //ESP_ERR_NO_MEM;
-
-    cJSON *body = cJSON_CreateObject();
-    cJSON_AddStringToObject(body, "msg_type", "text");
-    cJSON_AddStringToObject(body, "content", content_str);
-    free(content_str);
-
-    char *json_str = cJSON_PrintUnformatted(body);
-    cJSON_Delete(body);
-    if (!json_str) return ESP_ERR_NO_MEM;
-
-    String resp = apiCall(url, "POST", json_str);
-    free(json_str);
-
-    esp_err_t ret = ESP_FAIL;
-    if (!resp.isEmpty()) {
-        cJSON *root = cJSON_Parse(resp.c_str());
-        if (root) {
-            cJSON *code = cJSON_GetObjectItem(root, "code");
-            if (code && code->valueint == 0) {
-                ret = ESP_OK;
-            } else {
-                cJSON *msg = cJSON_GetObjectItem(root, "msg");
-                MIMI_LOGW(TAG, "Reply failed: code=%d, msg=%s",
-                         code ? code->valueint : -1, msg ? msg->valuestring : "unknown");
-            }
-            cJSON_Delete(root);
-        }
+    JsonDocument content_obj(&spiram_allocator);
+    content_obj["text"] = text;
+    String content_str;
+    serializeJson(content_obj, content_str);
+    if (content_str.isEmpty()) {
+        MIMI_LOGE(TAG, "request content is empty.");
+        return false; //ESP_ERR_NO_MEM;
     }
 
-    return ret == ESP_OK;
+    JsonDocument body_obj(&spiram_allocator);
+    body_obj["msg_type"] = "text";
+    body_obj["content"] = content_str;
+
+    String json_str;
+    serializeJson(body_obj, json_str);
+    if (json_str.isEmpty()) {
+        MIMI_LOGE(TAG, "Build request json error.");
+        return false; //ESP_ERR_NO_MEM;
+    }
+
+    String resp = apiCall(url, "POST", json_str.c_str());
+    if (resp.isEmpty()) {
+        MIMI_LOGE(TAG, "No content response.");
+        return false;
+    }
+
+    JsonDocument response(&spiram_allocator);
+    if (deserializeJson(response, resp)) {
+        MIMI_LOGE(TAG, "Parse response json error.");
+        return false;
+    }
+
+    // 解析成功
+    int code = response["code"].as<int>();
+    if (code != 0) {
+        const char *msg = response["msg"] | (const char *)"unknown";
+        MIMI_LOGW(TAG, "Reply failed: code=%d, msg=%s", code, msg);
+        return false;
+    }
+       
+    return true;
 }
 
 void MimiFeishu::setCredentials(const char *app_id, const char *app_secret)
