@@ -127,6 +127,10 @@ bool MimiApplication::OnInit() {
     setLLMModel(MIMI_OPENAI_MODEL);
     setLLMApiKey(MIMI_OPENAI_API_KEY);
 
+    // 添加工具
+    _cron.addTools(&_tools);
+    _websearch.addTools(&_tools);
+
     // start
     bool state = Start();
 
@@ -279,6 +283,10 @@ void MimiApplication::setSearchKey(const char* key) {
 
 bool MimiApplication::pushMessage(const MimiMsg* msg) {
     return _bus.pushInbound(msg);
+}
+
+void MimiApplication::registerTool(const MimiTool* tool) {
+    _tools.registerTool(tool);
 }
 
 bool MimiApplication::heartbeatTrigger() {

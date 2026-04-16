@@ -1,5 +1,6 @@
 #include "mimi_cron.h"
 #include "mimi_config.h"
+#include "mimi_tools.h"
 #include <ArduinoJson.h>
 #include <time.h>
 #include <esp_random.h>
@@ -282,6 +283,7 @@ void MimiCron::listJobs(const CronJob** jobs, int* count) {
     *count = _jobCount;
 }
 
+
 // ── Tool callbacks (use global cron instance) ──────────────────
 
 bool tool_cron_add_execute(const char* input_json, char* output, size_t output_size) {
@@ -421,4 +423,33 @@ bool tool_cron_remove_execute(const char* input_json, char* output, size_t outpu
         snprintf(output, output_size, "Error: job '%s' not found", jobId);
         return false;
     }
+}
+
+void MimiCron::addTools(MimiToolRegistry* registry) {
+    // cron_add
+    static const MimiTool ca = {
+        "cron_add",
+        "Schedule a recurring or one-shot task. The message will trigger an agent turn when the job fires.",
+        "{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\",\"description\":\"Short name for the job\"},\"schedule_type\":{\"type\":\"string\",\"description\":\"'every' for recurring or 'at' for one-shot\"},\"interval_s\":{\"type\":\"integer\",\"description\":\"Interval in seconds (for 'every')\"},\"at_epoch\":{\"type\":\"integer\",\"description\":\"Unix timestamp (for 'at')\"},\"message\":{\"type\":\"string\",\"description\":\"Message to inject when the job fires\"},\"channel\":{\"type\":\"string\",\"description\":\"Reply channel\"},\"chat_id\":{\"type\":\"string\",\"description\":\"Reply chat_id\"}},\"required\":[\"name\",\"schedule_type\",\"message\"]}",
+        tool_cron_add_execute
+    };
+    registry->registerTool(&ca);
+
+    // cron_list
+    static const MimiTool cl = {
+        "cron_list",
+        "List all scheduled cron jobs with their status, schedule, and IDs.",
+        "{\"type\":\"object\",\"properties\":{},\"required\":[]}",
+        tool_cron_list_execute
+    };
+    registry->registerTool(&cl);
+
+    // cron_remove
+    static const MimiTool cr = {
+        "cron_remove",
+        "Remove a scheduled cron job by its ID.",
+        "{\"type\":\"object\",\"properties\":{\"job_id\":{\"type\":\"string\",\"description\":\"The 8-character job ID to remove\"}},\"required\":[\"job_id\"]}",
+        tool_cron_remove_execute
+    };
+    registry->registerTool(&cr);
 }

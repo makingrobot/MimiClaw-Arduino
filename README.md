@@ -103,7 +103,7 @@ MimiTool ledTool = {
     .execute = ledToolExecute
 };
 
-mimi.tools().registerTool(&ledTool);
+application->registerTool(ledTool);
 ```
 这一步的input_schema_json描述很关键，它决定了传入到工具函数内的参数，这些参数是由LLM根据文本输入提取出来的。
 
@@ -140,7 +140,7 @@ MimiTool tempTool = {
     .execute = tempToolExecute
 };
 
-mimi.tools().registerTool(&tempTool);
+application->registerTool(tempTool);
 ```
 4. 编写工具使用指南（给LLM用）
 

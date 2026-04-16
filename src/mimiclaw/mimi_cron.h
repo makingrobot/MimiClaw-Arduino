@@ -6,6 +6,7 @@
 
 #include <Arduino.h>
 #include "mimi_bus.h"
+#include "mimi_tools.h"
 #include "src/framework/file/file_system.h"
 
 enum CronKind {
@@ -38,6 +39,8 @@ public:
     bool addJob(CronJob* job);
     bool removeJob(const char* jobId);
     void listJobs(const CronJob** jobs, int* count);
+
+    void addTools(MimiToolRegistry* registry);
 
     static const int MAX_JOBS = 16;
 

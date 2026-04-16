@@ -20,7 +20,6 @@ bool MimiToolRegistry::begin(FileSystem *file_system, MimiProxy* proxy) {
     _file_system = file_system;
     _toolCount = 0;
     registerBuiltinTools();
-    buildToolsJson();
     MIMI_LOGI(TAG, "Tool registry initialized (%d tools)", _toolCount);
     return true;
 }
@@ -31,7 +30,7 @@ void MimiToolRegistry::registerTool(const MimiTool* tool) {
         return;
     }
     _tools[_toolCount++] = *tool;
-    MIMI_LOGI(TAG, "Registered tool: %s", tool->name);
+    MIMI_LOGI(TAG, "Registered tool: [%d]%s", _toolCount-1, tool->name);
 }
 
 void MimiToolRegistry::buildToolsJson() {
@@ -54,6 +53,9 @@ void MimiToolRegistry::buildToolsJson() {
 }
 
 const char* MimiToolRegistry::getToolsJson() {
+    if (_toolsJson.isEmpty()) {
+        buildToolsJson();
+    }
     return _toolsJson.c_str();
 }
 
@@ -69,95 +71,9 @@ bool MimiToolRegistry::execute(const char* name, const char* input_json, char* o
     return false;
 }
 
-void MimiToolRegistry::registerBuiltinTools() {
-
-    // web_search
-    static const MimiTool ws = {
-        "web_search",
-        "Search the web for current information. Use this when you need up-to-date facts, news, weather, or anything beyond your training data.",
-        "{\"type\":\"object\",\"properties\":{\"query\":{\"type\":\"string\",\"description\":\"The search query\"}},\"required\":[\"query\"]}",
-        tool_web_search_execute
-    };
-    registerTool(&ws);
-
-    // get_current_time
-    static const MimiTool gt = {
-        "get_current_time",
-        "Get the current date and time. Also sets the system clock. Call this when you need to know what time or date it is.",
-        "{\"type\":\"object\",\"properties\":{},\"required\":[]}",
-        tool_get_time_execute
-    };
-    registerTool(&gt);
-
-    // read_file
-    static const MimiTool rf = {
-        "read_file",
-        "Read a file from SPIFFS storage. Path must start with " MIMI_SPIFFS_BASE "/.",
-        "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"Absolute path starting with " MIMI_SPIFFS_BASE "/\"}},\"required\":[\"path\"]}",
-        tool_read_file_execute
-    };
-    registerTool(&rf);
-
-    // write_file
-    static const MimiTool wf = {
-        "write_file",
-        "Write or overwrite a file on SPIFFS storage. Path must start with " MIMI_SPIFFS_BASE "/.",
-        "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"Absolute path starting with " MIMI_SPIFFS_BASE "/\"},\"content\":{\"type\":\"string\",\"description\":\"File content to write\"}},\"required\":[\"path\",\"content\"]}",
-        tool_write_file_execute
-    };
-    registerTool(&wf);
-
-    // edit_file
-    static const MimiTool ef = {
-        "edit_file",
-        "Find and replace text in a file on SPIFFS. Replaces first occurrence of old_string with new_string.",
-        "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"Absolute path starting with " MIMI_SPIFFS_BASE "/\"},\"old_string\":{\"type\":\"string\",\"description\":\"Text to find\"},\"new_string\":{\"type\":\"string\",\"description\":\"Replacement text\"}},\"required\":[\"path\",\"old_string\",\"new_string\"]}",
-        tool_edit_file_execute
-    };
-    registerTool(&ef);
-
-    // list_dir
-    static const MimiTool ld = {
-        "list_dir",
-        "List files on SPIFFS storage, optionally filtered by path prefix.",
-        "{\"type\":\"object\",\"properties\":{\"prefix\":{\"type\":\"string\",\"description\":\"Optional path prefix filter\"}},\"required\":[]}",
-        tool_list_dir_execute
-    };
-    registerTool(&ld);
-
-    // cron_add
-    static const MimiTool ca = {
-        "cron_add",
-        "Schedule a recurring or one-shot task. The message will trigger an agent turn when the job fires.",
-        "{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\",\"description\":\"Short name for the job\"},\"schedule_type\":{\"type\":\"string\",\"description\":\"'every' for recurring or 'at' for one-shot\"},\"interval_s\":{\"type\":\"integer\",\"description\":\"Interval in seconds (for 'every')\"},\"at_epoch\":{\"type\":\"integer\",\"description\":\"Unix timestamp (for 'at')\"},\"message\":{\"type\":\"string\",\"description\":\"Message to inject when the job fires\"},\"channel\":{\"type\":\"string\",\"description\":\"Reply channel\"},\"chat_id\":{\"type\":\"string\",\"description\":\"Reply chat_id\"}},\"required\":[\"name\",\"schedule_type\",\"message\"]}",
-        tool_cron_add_execute
-    };
-    registerTool(&ca);
-
-    // cron_list
-    static const MimiTool cl = {
-        "cron_list",
-        "List all scheduled cron jobs with their status, schedule, and IDs.",
-        "{\"type\":\"object\",\"properties\":{},\"required\":[]}",
-        tool_cron_list_execute
-    };
-    registerTool(&cl);
-
-    // cron_remove
-    static const MimiTool cr = {
-        "cron_remove",
-        "Remove a scheduled cron job by its ID.",
-        "{\"type\":\"object\",\"properties\":{\"job_id\":{\"type\":\"string\",\"description\":\"The 8-character job ID to remove\"}},\"required\":[\"job_id\"]}",
-        tool_cron_remove_execute
-    };
-    registerTool(&cr);
-}
-
 // ══════════════════════════════════════════════════════════════════
 // Built-in Tool Implementations
 // ══════════════════════════════════════════════════════════════════
-
-// ── Get Current Time ───────────────────────────────────────────
 
 static const char* MONTHS[] = {
     "Jan","Feb","Mar","Apr","May","Jun",
@@ -410,4 +326,51 @@ bool tool_list_dir_execute(const char* input_json, char* output, size_t output_s
     if (count == 0) snprintf(output, output_size, "(no files found)");
     MIMI_LOGI(TAG, "list_dir: %d files", count);
     return true;
+}
+
+void MimiToolRegistry::registerBuiltinTools() {
+    // get_current_time
+    static const MimiTool gt = {
+        "get_current_time",
+        "Get the current date and time. Also sets the system clock. Call this when you need to know what time or date it is.",
+        "{\"type\":\"object\",\"properties\":{},\"required\":[]}",
+        tool_get_time_execute
+    };
+    registerTool(&gt);
+
+    // read_file
+    static const MimiTool rf = {
+        "read_file",
+        "Read a file from SPIFFS storage. Path must start with " MIMI_SPIFFS_BASE "/.",
+        "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"Absolute path starting with " MIMI_SPIFFS_BASE "/\"}},\"required\":[\"path\"]}",
+        tool_read_file_execute
+    };
+    registerTool(&rf);
+
+    // write_file
+    static const MimiTool wf = {
+        "write_file",
+        "Write or overwrite a file on SPIFFS storage. Path must start with " MIMI_SPIFFS_BASE "/.",
+        "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"Absolute path starting with " MIMI_SPIFFS_BASE "/\"},\"content\":{\"type\":\"string\",\"description\":\"File content to write\"}},\"required\":[\"path\",\"content\"]}",
+        tool_write_file_execute
+    };
+    registerTool(&wf);
+
+    // edit_file
+    static const MimiTool ef = {
+        "edit_file",
+        "Find and replace text in a file on SPIFFS. Replaces first occurrence of old_string with new_string.",
+        "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"Absolute path starting with " MIMI_SPIFFS_BASE "/\"},\"old_string\":{\"type\":\"string\",\"description\":\"Text to find\"},\"new_string\":{\"type\":\"string\",\"description\":\"Replacement text\"}},\"required\":[\"path\",\"old_string\",\"new_string\"]}",
+        tool_edit_file_execute
+    };
+    registerTool(&ef);
+
+    // list_dir
+    static const MimiTool ld = {
+        "list_dir",
+        "List files on SPIFFS storage, optionally filtered by path prefix.",
+        "{\"type\":\"object\",\"properties\":{\"prefix\":{\"type\":\"string\",\"description\":\"Optional path prefix filter\"}},\"required\":[]}",
+        tool_list_dir_execute
+    };
+    registerTool(&ld);
 }

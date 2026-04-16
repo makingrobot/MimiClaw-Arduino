@@ -1,9 +1,9 @@
 /*
- * MimiClaw - ESP32-S3 AI Agent Arduino Library
+ * MimiClaw-Arduino
  * 
  * A complete AI agent running on ESP32-S3 with PSRAM.
- * Supports Anthropic Claude and OpenAI APIs, Telegram bot,
- * WebSocket gateway, persistent memory (SPIFFS), cron scheduling,
+ * Supports Anthropic Claude and OpenAI APIs, Telegram bot, Feishu bot
+ * WebSocket gateway, persistent memory, cron scheduling,
  * web search, and a ReAct agent loop with tool calling.
  */
 #ifndef MIMI_APPLICATION_H
@@ -37,11 +37,8 @@ public:
     virtual const std::string& GetAppName() const override { return "MimiClaw-Arduino"; };
     virtual const std::string& GetAppVersion() const override { return "1.0.0"; }
 
-    /**
-     * Initialize all subsystems. Call in setup().
-     * @return true on success
-     */
     virtual bool OnInit() override;
+    virtual void OnLoop() override;
 
     /**
      * Start all services (WiFi, Telegram, Agent, Cron, etc.)
@@ -49,12 +46,6 @@ public:
      * @return true on success
      */
     bool Start();
-
-    /**
-     * Process loop - call in loop() or let tasks run autonomously.
-     * If you don't use FreeRTOS tasks, call this periodically.
-     */
-    virtual void OnLoop() override;
 
     // --- Configuration setters (can be called before begin()) ---
     void setWiFiCredentials(const char* ssid, const char* password);
@@ -72,11 +63,16 @@ public:
     // --- Status ---
     bool isWiFiConnected();
     const char* getIP();
+
+    // 注册工具
+    void registerTool(const MimiTool* tool);
     
+    // 推送消息
     bool pushMessage(const MimiMsg* msg);
 
     bool heartbeatTrigger();
 
+    // Web搜索
     bool searchWeb(const char* query, char* output, size_t output_size);
 
     // --- Memory ---

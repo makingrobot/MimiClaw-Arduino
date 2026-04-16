@@ -1,5 +1,6 @@
 #include "mimi_websearch.h"
 #include "mimi_config.h"
+#include "mimi_tools.h"
 #include <ArduinoJson.h>
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
@@ -119,7 +120,6 @@ bool MimiWebsearch::search(const char* query, char* output, size_t output_size) 
 }
 
 // ── Tool callbacks ──────────────────
-
 bool tool_web_search_execute(const char* input_json, char* output, size_t output_size) {
     JsonDocument doc(&spiram_allocator);
     if (deserializeJson(doc, input_json)) {
@@ -138,4 +138,15 @@ bool tool_web_search_execute(const char* input_json, char* output, size_t output
     bool ret = g_websearch->search(query, output, output_size);
     
     return ret;
+}
+
+void MimiWebsearch::addTools(MimiToolRegistry* registry) {
+    // web_search
+    static const MimiTool ws = {
+        "web_search",
+        "Search the web for current information. Use this when you need up-to-date facts, news, weather, or anything beyond your training data.",
+        "{\"type\":\"object\",\"properties\":{\"query\":{\"type\":\"string\",\"description\":\"The search query\"}},\"required\":[\"query\"]}",
+        tool_web_search_execute
+    };
+    registry->registerTool(&ws);
 }

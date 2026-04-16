@@ -5,6 +5,7 @@
 #define MIMI_WEBSEARCH_H
 
 #include <Arduino.h>
+#include "mimi_tools.h"
 
 class MimiWebsearch {
 public:
@@ -12,6 +13,8 @@ public:
     void init();
     void setKey(const char* key);
     bool search(const char* query, char* output, size_t output_size);
+
+    void addTools(MimiToolRegistry* registry);
 
 private:
     char _search_key[128] = {0};
