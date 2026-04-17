@@ -16,10 +16,6 @@ static MimiSerialCli *g_serialcli = nullptr;
 
 MimiSerialCli::MimiSerialCli() {
     g_serialcli = this;
-    _msg_queue = xQueueCreate(10, sizeof(MimiMsg));
-    if (!_msg_queue) {
-        MIMI_LOGE(TAG, "Failed to create message queues");
-    }
 }
 
 /**
@@ -659,21 +655,6 @@ static int cmd_talk(int argc, char **argv)
     return 0;
 }
 
-/**
- * cmd: print_message
- */
-static int cmd_print_message(int argc, char **argv)
-{
-    MimiMsg msg;
-    if (xQueueReceive(g_serialcli->msg_queue(), &msg, 1000) == pdTRUE) { //阻塞
-        printf("%s\n", msg.content);
-        free(msg.content);
-        return 0;
-    }
-
-    return 1;
-}
-
 bool MimiSerialCli::start() {
     //console prompt. By default it is "ESP32>"
     _console.setPrompt("mimi> ");
@@ -805,28 +786,18 @@ bool MimiSerialCli::start() {
             return EXIT_SUCCESS;
         }, "Restart the device"));
 
-    /* print_message */
-    _console.registerCommand(ESP32Console::ConsoleCommand("print_message", 
-        &cmd_print_message, "Print message."));
-        
     MIMI_LOGI(TAG, "Serial CLI started");
     return true;
 }
 
 bool MimiSerialCli::sendMessage(const char* chat_id, const char* text) {
+
+#if CONFIG_USE_UART1 ==1
+    String path = "/dev/uart/1";
+    stdout = fopen(path.c_str(), "w");
+    stderr = stdout;
+#endif
+
     printf("%s\n", text);
-
-    MimiMsg msg;
-    memset(&msg, 0, sizeof(msg));
-    strncpy(msg.chat_id, chat_id, sizeof(msg.chat_id) - 1);
-    msg.content = strdup(text);
-
-    if (xQueueSend(_msg_queue, &msg, pdMS_TO_TICKS(1000)) != pdTRUE) {
-        MIMI_LOGW(TAG, "queue full, dropping message");
-        return false;
-    }
-
-    int ret = 0;
-    esp_console_run("print_message", &ret);
     return true;
 }

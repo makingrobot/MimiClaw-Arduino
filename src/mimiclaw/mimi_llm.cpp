@@ -85,7 +85,7 @@ void MimiLLM::setProxy(MimiProxy* proxy) {
 }
 
 bool MimiLLM::isOpenAI() {
-    return strcmp(_provider, "openai") == 0 || strcmp(_provider, "deepseek");
+    return strcmp(_provider, "openai") == 0 || strcmp(_provider, "deepseek") == 0;
 }
 
 const char* MimiLLM::apiUrl() {
@@ -119,6 +119,21 @@ const char* MimiLLM::apiPath() {
     return slash ? slash : "/";
 }
 
+/**
+ * OpenAI请求JSON格式
+ * {
+ *   "model": "...",
+ *   "max_completion_tokens": 4096,
+ *   "messages": [
+ *     {"role":"system", "content", "..."},
+ *     {...},
+ *   ],
+ *   "tools:" [
+ *     {"type":"function", "function":{"name":"...", "description":"...", "parameter": "..." }},
+ *     {...}
+ *   ] 
+ * }
+ */
 String MimiLLM::buildRequestBody(const char* system_prompt, JsonArray messages, const char* tools_json) {
     JsonDocument doc(&spiram_allocator);
     doc["model"] = _model;
@@ -177,6 +192,7 @@ String MimiLLM::buildRequestBody(const char* system_prompt, JsonArray messages, 
                 }
                 m["content"] = textBuf.isEmpty() ? "" : textBuf.c_str();
                 if (!hasToolCalls) m.remove("tool_calls");
+
             } else if (strcmp(role, "user") == 0) {
                 // tool_result blocks become role=tool messages
                 String userText;
@@ -271,7 +287,7 @@ String MimiLLM::httpDirect(const String& postData) {
         http.addHeader("anthropic-version", MIMI_LLM_API_VERSION);
     }
 
-    //Serial.println(postData);
+    // Serial.println(postData);
     
     int httpCode = http.POST(postData);
     String response;

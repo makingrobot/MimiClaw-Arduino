@@ -27,4 +27,4 @@ mkspiffs.exe  -c persist_data   -b 4096   -p 256   -s 0x200000   persist_data.bi
 # 命令                串口名称                 起始地址    镜像文件
 esptool.exe  --port /dev/ttyUSB0  write_flash  0xc90000   persist_data.bin
 ```
-<i>esptool.exe 在 ${HOME}\AppData\Local\Arduino15\packages\esp32\tools\esptool 文件夹内</i>
+<i>esptool.exe 在 ${HOME}\AppData\Local\Arduino15\packages\esp32\tools\esptool-py 文件夹内</i>
