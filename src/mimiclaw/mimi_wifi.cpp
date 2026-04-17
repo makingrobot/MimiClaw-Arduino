@@ -22,8 +22,8 @@ void MimiWiFi::setCredentials(const char* ssid, const char* pass) {
     _pass = pass;
     // Also save to Preferences
     _prefs.begin(MIMI_PREF_WIFI, false);
-    _prefs.putString("ssid", ssid);
-    _prefs.putString("password", pass);
+    _prefs.putString(MIMI_PREF_WIFI_SSID, ssid);
+    _prefs.putString(MIMI_PREF_WIFI_PASSWORD, pass);
     _prefs.end();
     MIMI_LOGI(TAG, "WiFi credentials saved for SSID: %s", ssid);
 }
@@ -32,8 +32,8 @@ bool MimiWiFi::start() {
     // Load from Preferences if not set
     if (_ssid.isEmpty()) {
         _prefs.begin(MIMI_PREF_WIFI, true);
-        _ssid = _prefs.getString("ssid", "");
-        _pass = _prefs.getString("password", "");
+        _ssid = _prefs.getString(MIMI_PREF_WIFI_SSID, MIMI_WIFI_SSID);
+        _pass = _prefs.getString(MIMI_PREF_WIFI_PASSWORD, MIMI_WIFI_PASS);
         _prefs.end();
     }
 

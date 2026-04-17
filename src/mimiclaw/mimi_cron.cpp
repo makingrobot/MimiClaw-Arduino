@@ -66,7 +66,7 @@ bool MimiCron::loadJobs() {
 
     JsonDocument doc(&spiram_allocator);
     if (deserializeJson(doc, content)) {
-        MIMI_LOGW(TAG, "Failed to parse cron JSON");
+        MIMI_LOGW(TAG, "Failed to parse cron JSON file %s", MIMI_CRON_FILE);
         _jobCount = 0;
         return true;
     }

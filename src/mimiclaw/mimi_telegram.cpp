@@ -20,7 +20,7 @@ bool MimiTelegram::begin(MimiBus* bus) {
     // Load token from Preferences
     Preferences prefs;
     if (prefs.begin(MIMI_PREF_TG, true)) {
-        String tok = prefs.getString("token", "");
+        String tok = prefs.getString(MIMI_PREF_TG_TOKEN, MIMI_TG_TOKEN);
         if (tok.length() > 0) {
             strncpy(_token, tok.c_str(), sizeof(_token) - 1);
         }
@@ -44,7 +44,7 @@ void MimiTelegram::setToken(const char* token) {
     strncpy(_token, token, sizeof(_token) - 1);
     Preferences prefs;
     if (prefs.begin(MIMI_PREF_TG, false)) {
-        prefs.putString("token", token);
+        prefs.putString(MIMI_PREF_TG_TOKEN, token);
         prefs.end();
     }
     MIMI_LOGI(TAG, "Telegram bot token saved");

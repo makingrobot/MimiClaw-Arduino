@@ -49,17 +49,19 @@ public:
 
     // --- Configuration setters (can be called before begin()) ---
     void setWiFiCredentials(const char* ssid, const char* password);
+    
     void setTelegramToken(const char* token);
+    void setFeishuCredentials(const char* app_id, const char* app_secret);
+
     void setLLMApiKey(const char* key);
     void setLLMModel(const char* model);
     void setLLMProvider(const char* provider);  // "anthropic" or "openai"
     void setLLMApiUrl(const char* url);              // Custom API endpoint URL
+
     void setProxy(const char* host, uint16_t port, const char* type = "http");
     void clearProxy();
-    void setSearchKey(const char* key);
     void setTimezone(const char* tz);
-    void setFeishuCredentials(const char* app_id, const char* app_secret);
-
+    
     // --- Status ---
     bool isWiFiConnected();
     const char* getIP();
@@ -73,6 +75,9 @@ public:
     bool heartbeatTrigger();
 
     // Web搜索
+    void setBraveKey(const char* key);
+    void setTavilyKey(const char* key);
+    void setSearchProvider(const char* provider);
     bool searchWeb(const char* query, char* output, size_t output_size);
 
     // --- Memory ---

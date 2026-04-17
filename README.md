@@ -23,7 +23,7 @@
 
 - 带有 **PSRAM** 的 ESP32-S3 开发板（推荐：8MB 以上 PSRAM，16MB Flash）
 - WiFi 网络连接
-- SD卡（可选）
+- SD卡模块（可选）
 
 ## 依赖库
 
@@ -151,6 +151,7 @@ application->registerTool(tempTool);
 - 语音输入
 - 语音输出
 - 拍照输入（摄像头支持）
+- TFT-LCD显示
 
 
 ## 许可证
@@ -159,6 +160,6 @@ MIT — 详见原始 MimiClaw 项目。
 
 
 
-【&#x1f44d;赞赏&#x1f44d;】
+## 赞赏
 
 ![赞赏码](assets/like.png)

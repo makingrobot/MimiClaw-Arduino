@@ -4,8 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <stdio.h>
-
 #include "esp_websocket_client.h"
 #include "esp_transport.h"
 #include "esp_transport_tcp.h"

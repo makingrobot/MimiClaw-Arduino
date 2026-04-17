@@ -116,17 +116,6 @@ bool MimiApplication::OnInit() {
     
     MIMI_LOGI(TAG, "All subsystems initialized");
 
-    // use mimi_secrets.h config.
-    setWiFiCredentials(MIMI_WIFI_SSID, MIMI_WIFI_PASS);
-
-    setFeishuCredentials(MIMI_FEISHU_APP_ID, MIMI_FEISHU_APP_SECRET);
-
-    // LLM model
-    setLLMProvider("openai");
-    setLLMApiUrl(MIMI_OPENAI_API_URL);
-    setLLMModel(MIMI_OPENAI_MODEL);
-    setLLMApiKey(MIMI_OPENAI_API_KEY);
-
     // 添加工具
     _cron.addTools(&_tools);
     _websearch.addTools(&_tools);
@@ -160,8 +149,10 @@ void MimiApplication::outboundTask(void* arg) {
                 MIMI_LOGW(TAG, "WS send failed for %s", msg.chat_id);
             }
 
-        } else if (strcmp(msg.channel, MIMI_CHAN_SYSTEM) == 0) {
-            MIMI_LOGI(TAG, "System message [%s]: %.128s", msg.chat_id, msg.content);
+        } else if (strcmp(msg.channel, MIMI_CHAN_CLI) == 0) {
+            if (!self->_serial_cli.sendMessage(msg.chat_id, msg.content)) {
+                MIMI_LOGI(TAG, "CLI send failed for [%s]", msg.chat_id);
+            }
 
         } else if (strcmp(msg.channel, MIMI_CHAN_FEISHU) == 0) {
             if (!self->_feishu.sendMessage(msg.chat_id, msg.content)) {
@@ -171,6 +162,9 @@ void MimiApplication::outboundTask(void* arg) {
                           msg.chat_id, (int)strlen(msg.content));
             }
             
+        } else if (strcmp(msg.channel, MIMI_CHAN_SYSTEM) == 0) {
+            MIMI_LOGI(TAG, "System message [%s]: %.128s", msg.chat_id, msg.content);
+
         } else {
             MIMI_LOGW(TAG, "Unknown channel: %s", msg.channel);
         }
@@ -277,8 +271,16 @@ void MimiApplication::setFeishuCredentials(const char* app_id, const char* app_s
     _feishu.setCredentials(app_id, app_secret);
 }
 
-void MimiApplication::setSearchKey(const char* key) {
-    _websearch.setKey(key);
+void MimiApplication::setBraveKey(const char* key) {
+    _websearch.setBraveKey(key);
+}
+
+void MimiApplication::setTavilyKey(const char* key) {
+    _websearch.setTavilyKey(key);
+}
+
+void MimiApplication::setSearchProvider(const char* provider) {
+    _websearch.setProvider(provider);
 }
 
 bool MimiApplication::pushMessage(const MimiMsg* msg) {

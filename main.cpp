@@ -4,9 +4,9 @@
  * 
  * Author: Billy Zhang（billy_zh@126.com）
  */
-#include "config.h"
 
 #include <Arduino.h>
+#include "config.h"
 #include "board_def.h"
 #include "src/framework/sys/log.h"
 #include "src/framework/app/application.h"

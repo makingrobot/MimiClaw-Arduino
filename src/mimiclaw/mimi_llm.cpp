@@ -22,17 +22,17 @@ void LlmResponse::free_response() {
 MimiLLM::MimiLLM() : _proxy(nullptr) {
     memset(_apiKey, 0, sizeof(_apiKey));
     memset(_apiUrl, 0, sizeof(_apiUrl));
-    strncpy(_model, MIMI_LLM_DEFAULT_MODEL, sizeof(_model) - 1);
-    strncpy(_provider, MIMI_LLM_PROVIDER_DEFAULT, sizeof(_provider) - 1);
+    memset(_model, 0, sizeof(_model));
+    memset(_provider, 0, sizeof(_provider));
 }
 
 bool MimiLLM::begin() {
     // Load from Preferences
     _prefs.begin(MIMI_PREF_LLM, true);
-    String key = _prefs.getString("api_key", "");
-    String model = _prefs.getString("model", "");
-    String provider = _prefs.getString("provider", "");
-    String url = _prefs.getString("api_url", "");
+    String key = _prefs.getString(MIMI_PREF_LLM_APIKEY, MIMI_LLM_API_KEY);
+    String model = _prefs.getString(MIMI_PREF_LLM_MODEL, MIMI_LLM_MODEL);
+    String provider = _prefs.getString(MIMI_PREF_LLM_PROVIDER, MIMI_LLM_PROVIDER);
+    String url = _prefs.getString(MIMI_PREF_LLM_APIURL, MIMI_LLM_API_URL);
     _prefs.end();
 
     if (!key.isEmpty()) strncpy(_apiKey, key.c_str(), sizeof(_apiKey) - 1);
@@ -51,7 +51,7 @@ bool MimiLLM::begin() {
 void MimiLLM::setApiKey(const char* key) {
     strncpy(_apiKey, key, sizeof(_apiKey) - 1);
     _prefs.begin(MIMI_PREF_LLM, false);
-    _prefs.putString("api_key", key);
+    _prefs.putString(MIMI_PREF_LLM_APIKEY, key);
     _prefs.end();
     MIMI_LOGI(TAG, "API key saved");
 }
@@ -59,7 +59,7 @@ void MimiLLM::setApiKey(const char* key) {
 void MimiLLM::setModel(const char* model) {
     strncpy(_model, model, sizeof(_model) - 1);
     _prefs.begin(MIMI_PREF_LLM, false);
-    _prefs.putString("model", model);
+    _prefs.putString(MIMI_PREF_LLM_MODEL, model);
     _prefs.end();
     MIMI_LOGI(TAG, "Model set to: %s", _model);
 }
@@ -67,7 +67,7 @@ void MimiLLM::setModel(const char* model) {
 void MimiLLM::setProvider(const char* provider) {
     strncpy(_provider, provider, sizeof(_provider) - 1);
     _prefs.begin(MIMI_PREF_LLM, false);
-    _prefs.putString("provider", provider);
+    _prefs.putString(MIMI_PREF_LLM_PROVIDER, provider);
     _prefs.end();
     MIMI_LOGI(TAG, "Provider set to: %s", _provider);
 }
@@ -75,7 +75,7 @@ void MimiLLM::setProvider(const char* provider) {
 void MimiLLM::setApiUrl(const char* url) {
     strncpy(_apiUrl, url, sizeof(_apiUrl) - 1);
     _prefs.begin(MIMI_PREF_LLM, false);
-    _prefs.putString("api_url", url);
+    _prefs.putString(MIMI_PREF_LLM_APIURL, url);
     _prefs.end();
     MIMI_LOGI(TAG, "API URL set to: %s", _apiUrl);
 }
@@ -85,12 +85,13 @@ void MimiLLM::setProxy(MimiProxy* proxy) {
 }
 
 bool MimiLLM::isOpenAI() {
-    return strcmp(_provider, "openai") == 0;
+    return strcmp(_provider, "openai") == 0 || strcmp(_provider, "deepseek");
 }
 
 const char* MimiLLM::apiUrl() {
     if (_apiUrl[0]) return _apiUrl;
-    return isOpenAI() ? MIMI_OPENAI_API_URL : MIMI_LLM_API_URL;
+    //return isOpenAI() ? MIMI_OPENAI_API_URL : MIMI_LLM_API_URL;
+    return _apiUrl;
 }
 
 const char* MimiLLM::apiHost() {
@@ -252,8 +253,8 @@ String MimiLLM::httpDirect(const String& postData) {
     http.setReuse(false);
 
     const char *url = apiUrl();
-    MIMI_LOGI(TAG, "access url: %s", url);
 
+    MIMI_LOGD(TAG, "POST url: %s", url);
     if (!http.begin(*client, url)) {
         MIMI_LOGE(TAG, "HTTP begin failed");
         delete client;
@@ -264,12 +265,13 @@ String MimiLLM::httpDirect(const String& postData) {
     if (isOpenAI()) {
         String auth = "Bearer " + String(_apiKey);
         http.addHeader("Authorization", auth);
+        MIMI_LOGD(TAG, "Authorization: %s", auth.c_str());
     } else {
         http.addHeader("x-api-key", _apiKey);
         http.addHeader("anthropic-version", MIMI_LLM_API_VERSION);
     }
 
-    Serial.println(postData);
+    //Serial.println(postData);
     
     int httpCode = http.POST(postData);
     String response;

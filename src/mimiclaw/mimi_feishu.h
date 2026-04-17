@@ -27,8 +27,8 @@ public:
     void handleWsFrame(const uint8_t *buf, size_t len);
 
 private:
-    char _app_id[64];
-    char _app_secret[128];
+    String _app_id;
+    String _app_secret;
 
     MimiBus* _bus = nullptr;
     MimiProxy* _proxy = nullptr;
@@ -51,7 +51,7 @@ private:
 
     /* ── Feishu WebSocket state ────────────────────────────────── */
     esp_websocket_client_handle_t _ws_client = NULL;
-    char _ws_url[512] = {0};
+    String _ws_url;
     int _ws_ping_interval_ms = 120000;
     int _ws_reconnect_interval_ms = 30000;
     int _ws_reconnect_nonce_ms = 30000;
@@ -59,7 +59,7 @@ private:
     bool _ws_connected = false;
 
     /* ── Credentials & token state ─────────────────────────────── */
-    char _tenant_token[512] = {0};
+    String _tenant_token;
     int64_t _token_expire_time = 0;
 
 };

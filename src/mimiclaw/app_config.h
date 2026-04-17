@@ -16,6 +16,11 @@
 #define CONFIG_USE_SW_TIMER                 1
 #define CONFIG_USE_HW_TIMER                 0  // esp_timer
 
+// UART1
+#define CONFIG_USE_UART1                    1
+#define CONFIG_UART1_RX                     18
+#define CONFIG_UART1_TX                     17
+
 // 使用WiFi
 #define CONFIG_USE_WIFI                     1
 

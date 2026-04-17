@@ -95,23 +95,20 @@
 #endif
 
 // ── LLM ────────────────────────────────────────────────────────
-#ifndef MIMI_LLM_DEFAULT_MODEL
-#define MIMI_LLM_DEFAULT_MODEL       "claude-opus-4-5"
+#ifndef MIMI_LLM_MODEL
+#define MIMI_LLM_MODEL       "claude-opus-4-5"
 #endif
-#ifndef MIMI_LLM_PROVIDER_DEFAULT
-#define MIMI_LLM_PROVIDER_DEFAULT    "anthropic"
+#ifndef MIMI_LLM_PROVIDER
+#define MIMI_LLM_PROVIDER    "anthropic"
 #endif
 #ifndef MIMI_LLM_MAX_TOKENS
 #define MIMI_LLM_MAX_TOKENS          4096
 #endif
 #ifndef MIMI_LLM_API_URL
-#define MIMI_LLM_API_URL             "https://api.anthropic.com/v1/messages"
+#define MIMI_LLM_API_URL           "https://api.anthropic.com/v1/messages"
 #endif
-#ifndef MIMI_OPENAI_API_URL
-#define MIMI_OPENAI_API_URL          "https://api.openai.com/v1/chat/completions"
-#endif
-#ifndef MIMI_OPENAI_API_KEY
-#define MIMI_OPENAI_API_KEY          ""
+#ifndef MIMI_LLM_API_KEY
+#define MIMI_LLM_API_KEY          ""
 #endif
 #ifndef MIMI_OPENAI_MODEL
 #define MIMI_OPENAI_MODEL         ""
@@ -185,6 +182,17 @@
 #define MIMI_HEARTBEAT_INTERVAL_MS   (30 * 60 * 1000)
 #endif
 
+// ── Web search ──────────────────────────────────────────────────
+#ifndef MIMI_SEARCH_PROVIDER
+#define MIMI_SEARCH_PROVIDER        "tavily"  # tavily | brave
+#endif
+#ifndef MIMI_TAVILY_KEY
+#define MIMI_TAVILY_KEY             ""
+#endif
+#ifndef MIMI_BRAVE_KEY              
+#define MIMI_BRAVE_KEY              ""
+#endif
+
 // ── Skills ─────────────────────────────────────────────────────
 #ifndef MIMI_SKILLS_PREFIX
 #define MIMI_SKILLS_PREFIX           MIMI_SPIFFS_BASE "/skills/"
@@ -212,6 +220,22 @@
 #define MIMI_PREF_PROXY     "proxy_config"
 #define MIMI_PREF_SEARCH    "search_config"
 #define MIMI_PREF_FS        "feishu_config"
+
+#define MIMI_PREF_WIFI_SSID         "ssid"
+#define MIMI_PREF_WIFI_PASSWORD     "password"
+#define MIMI_PREF_TG_TOKEN          "token"
+#define MIMI_PREF_LLM_APIKEY        "api_key"
+#define MIMI_PREF_LLM_MODEL         "model"
+#define MIMI_PREF_LLM_PROVIDER      "provider"
+#define MIMI_PREF_LLM_APIURL        "api_url"
+#define MIMI_PREF_PROXY_HOST        "host"
+#define MIMI_PREF_PROXY_PORT        "port"
+#define MIMI_PREF_PROXY_TYPE        "proxy_type"
+#define MIMI_PREF_SEARCH_BRAVEKEY   "brave_key"
+#define MIMI_PREF_SEARCH_TAVILYKEY  "tavily_key"
+#define MIMI_PREF_SEARCH_PROVIDER   "provider"
+#define MIMI_PREF_FS_APPID          "app_id"
+#define MIMI_PREF_FS_APPSECRET      "app_secret"
 
 // ── PSRAM allocation helper ────────────────────────────────────
 #ifdef BOARD_HAS_PSRAM

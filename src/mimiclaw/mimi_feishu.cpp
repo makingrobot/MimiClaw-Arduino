@@ -39,10 +39,7 @@ static uint64_t s_seen_msg_keys[FEISHU_DEDUP_CACHE_SIZE] = {0};
 static size_t s_seen_msg_idx = 0;
 
 MimiFeishu::MimiFeishu() {
-    memset(_app_id, 0, sizeof(_app_id));
-    memset(_app_secret, 0, sizeof(_app_secret));
-    memset(_ws_url, 0, sizeof(_ws_url));
-    memset(_tenant_token, 0, sizeof(_tenant_token));
+    
 }
 
 void MimiFeishu::setProxy(MimiProxy* proxy) {
@@ -97,20 +94,20 @@ int MimiFeishu::sendWsFrame(const ws_frame_t *f, const uint8_t *payload, size_t 
 /* ── Get / refresh tenant access token ─────────────────────── */
 bool MimiFeishu::getTenantToken()
 {
-    if (_app_id[0] == '\0' || _app_secret[0] == '\0') {
+    if (_app_id.isEmpty() || _app_secret.isEmpty()) {
         MIMI_LOGW(TAG, "No credentials configured");
         return false; //ESP_ERR_INVALID_STATE;
     }
 
     int64_t now = esp_timer_get_time() / 1000000LL;
-    if (_tenant_token[0] != '\0' && _token_expire_time > now + 300) {
+    if (!_tenant_token.isEmpty() && _token_expire_time > now + 300) {
         return true; //ESP_OK;
     }
 
     // 请求处理
     JsonDocument request(&spiram_allocator);
-    request["app_id"] = _app_id;
-    request["app_secret"] = _app_secret;
+    request["app_id"] = _app_id.c_str();
+    request["app_secret"] = _app_secret.c_str();
     
     String json_str;
     serializeJson(request, json_str);
@@ -136,7 +133,7 @@ bool MimiFeishu::getTenantToken()
 
     if (response.containsKey("tenant_access_token")) {
         const char *token = response["tenant_access_token"].as<const char *>();
-        strncpy(_tenant_token, token, sizeof(_tenant_token) - 1);
+        _tenant_token = String(token);
 
         int expire = response.containsKey("expire") ? response["expire"].as<int>() : 7200;
         _token_expire_time = now + expire - 300;
@@ -166,13 +163,13 @@ String MimiFeishu::apiCall(const char *url, const char *method, const char *post
         return "";
     }
 
-    String auth_header = "Bearer " + String(_tenant_token);
+    String auth_header = "Bearer " + _tenant_token;
     http.addHeader("Authorization", auth_header);
 
-    MIMI_LOGI(TAG, "Request url: %s", url);
-    MIMI_LOGI(TAG, "Authheader: %s", auth_header.c_str());
+    MIMI_LOGD(TAG, "%s url: %s", method, url);
+    MIMI_LOGD(TAG, "Authheader: %s", auth_header.c_str());
     if (post_data) {
-        MIMI_LOGI(TAG, "Postdata: %s", post_data);
+        MIMI_LOGD(TAG, "Postdata: %s", post_data);
     }
 
     int httpCode;
@@ -212,6 +209,7 @@ String MimiFeishu::httpCall(const char *url, const char *method, const char *pos
 
     http.addHeader("locale", "zh");
 
+    MIMI_LOGD(TAG, "%s url: %s", method, url);
     int httpCode;
     if (strcmp(method, "POST")==0) {
         http.addHeader("Content-Type", "application/json; charset=utf-8");
@@ -261,8 +259,8 @@ bool MimiFeishu::pullWsConfig()
 {
     // 请求处理
     JsonDocument request(&spiram_allocator);
-    request["AppID"] = _app_id;
-    request["AppSecret"] = _app_secret;
+    request["AppID"] = _app_id.c_str();
+    request["AppSecret"] = _app_secret.c_str();
 
     String json_str;
     serializeJson(request, json_str);
@@ -288,9 +286,9 @@ bool MimiFeishu::pullWsConfig()
         return false; //ESP_FAIL;
     }
 
-    strncpy(_ws_url, url, sizeof(_ws_url) - 1);
+    _ws_url = String(url);
     char sid[24] = {0};
-    if (parse_query_param(_ws_url, "service_id", sid, sizeof(sid))) {
+    if (parse_query_param(_ws_url.c_str(), "service_id", sid, sizeof(sid))) {
         _ws_service_id = atoi(sid);
     }
 
@@ -535,21 +533,18 @@ bool MimiFeishu::begin(MimiBus *bus)
     // Load token from Preferences
     Preferences prefs;
     if (prefs.begin(MIMI_PREF_FS, true)) {
-        String app_id = prefs.getString("app_id", "");
-        if (app_id.length() > 0) {
-            strncpy(_app_id, app_id.c_str(), sizeof(_app_id) - 1);
-        }
-        String app_secret = prefs.getString("app_secret", "");
-        if (app_secret.length() > 0) {
-            strncpy(_app_secret, app_secret.c_str(), sizeof(_app_secret) - 1);
-        }
+        _app_id = prefs.getString(MIMI_PREF_FS_APPID, "");
+        _app_secret = prefs.getString(MIMI_PREF_FS_APPSECRET, MIMI_FEISHU_APP_SECRET);
         prefs.end();
     }
 
-    if (_app_id[0] && _app_secret[0]) {
-        MIMI_LOGI(TAG, "credentials loaded (app_id=%.8s...)", _app_id);
-    } else {
+    if (_app_id.isEmpty()) _app_id = MIMI_FEISHU_APP_ID;
+    if (_app_secret.isEmpty()) _app_secret = MIMI_FEISHU_APP_SECRET;
+
+    if (_app_id.isEmpty() || _app_secret.isEmpty()) {
         MIMI_LOGW(TAG, "No credentials. Use CLI: set_feishu_creds <APP_ID> <APP_SECRET>");
+    } else {
+        MIMI_LOGI(TAG, "credentials loaded (app_id=%.8s...)", _app_id.c_str());
     }
 
     return true;
@@ -568,7 +563,7 @@ void MimiFeishu::pollTask()
         }
 
         esp_websocket_client_config_t ws_cfg = {};
-        ws_cfg.uri = _ws_url;
+        ws_cfg.uri = _ws_url.c_str();
         ws_cfg.buffer_size = 2048;
         ws_cfg.task_stack = MIMI_FEISHU_POLL_STACK;
         ws_cfg.reconnect_timeout_ms = _ws_reconnect_interval_ms;
@@ -641,7 +636,7 @@ bool MimiFeishu::start()
 
 bool MimiFeishu::sendMessage(const char *chat_id, const char *text)
 {
-    if (_app_id[0] == '\0' || _app_secret[0] == '\0') {
+    if (_app_id.isEmpty() || _app_secret.isEmpty()) {
         MIMI_LOGW(TAG, "Cannot send: no credentials configured");
         return false;
     }
@@ -726,7 +721,7 @@ bool MimiFeishu::sendMessage(const char *chat_id, const char *text)
 
 bool MimiFeishu::replyMessage(const char *message_id, const char *text)
 {
-    if (_app_id[0] == '\0' || _app_secret[0] == '\0') {
+    if (_app_id.isEmpty() || _app_secret.isEmpty()) {
         MIMI_LOGW(TAG, "Cannot send: no credentials configured");
         return false; //ESP_ERR_INVALID_STATE;
     }
@@ -779,13 +774,13 @@ bool MimiFeishu::replyMessage(const char *message_id, const char *text)
 
 void MimiFeishu::setCredentials(const char *app_id, const char *app_secret)
 {
-    strncpy(_app_id, app_id, sizeof(_app_id) - 1);
-    strncpy(_app_secret, app_secret, sizeof(_app_secret) - 1);
+    _app_id = String(app_id);
+    _app_secret = String(app_secret);
 
     Preferences prefs;
     if (prefs.begin(MIMI_PREF_FS, false)) {
-        prefs.putString("app_id", app_id);
-        prefs.putString("app_secret", app_secret);
+        prefs.putString(MIMI_PREF_FS_APPID, app_id);
+        prefs.putString(MIMI_PREF_FS_APPSECRET, app_secret);
         prefs.end();
     }
     MIMI_LOGI(TAG, "credentials saved");

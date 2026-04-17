@@ -6,11 +6,20 @@
 #include <Arduino.h>
 #include <Preferences.h>
 #include "mimi_application.h"
+#include "mimi_bus.h"
 #include "src/framework/board/board.h"
 #include "src/framework/file/file_system.h"
 
-MimiSerialCli::MimiSerialCli() {
+#define TAG "serial_cli"
 
+static MimiSerialCli *g_serialcli = nullptr;
+
+MimiSerialCli::MimiSerialCli() {
+    g_serialcli = this;
+    _msg_queue = xQueueCreate(10, sizeof(MimiMsg));
+    if (!_msg_queue) {
+        MIMI_LOGE(TAG, "Failed to create message queues");
+    }
 }
 
 /**
@@ -226,17 +235,47 @@ static int cmd_clear_proxy(int argc, char **argv)
 }
 
 /**
- * cmd: set_search_key  key
+ * cmd: set_brave_key  key
  */
-static int cmd_set_search_key(int argc, char **argv)
+static int cmd_set_brave_key(int argc, char **argv)
 {
     if (argc < 2) {
         printf("argument wrong.\n");
         return 1;
     }
     MimiApplication *app = (MimiApplication *)(&Application::GetInstance());
-    app->setSearchKey(argv[1]);
-    printf("Search API key saved.\n");
+    app->setBraveKey(argv[1]);
+    printf("Brave key saved.\n");
+    return 0;
+}
+
+/**
+ * cmd: set_tavily_key  key
+ */
+static int cmd_set_tavily_key(int argc, char **argv)
+{
+    if (argc < 2) {
+        printf("argument wrong.\n");
+        return 1;
+    }
+    MimiApplication *app = (MimiApplication *)(&Application::GetInstance());
+    app->setTavilyKey(argv[1]);
+    printf("Tavily key saved.\n");
+    return 0;
+}
+
+/**
+ * cmd: set_search_provider  provider
+ */
+static int cmd_set_search_provider(int argc, char **argv)
+{
+    if (argc < 2) {
+        printf("argument wrong.\n");
+        return 1;
+    }
+    MimiApplication *app = (MimiApplication *)(&Application::GetInstance());
+    app->setSearchProvider(argv[1]);
+    printf("Search Provider saved.\n");
     return 0;
 }
 
@@ -453,15 +492,20 @@ static void _print_config_u16(const char *label, const char *ns, const char *key
 static int cmd_config_show(int argc, char **argv)
 {
     printf("=== Current Configuration ===\n");
-    _print_config("WiFi SSID", MIMI_PREF_WIFI, "ssid", false);
-    _print_config("WiFi Pass", MIMI_PREF_WIFI, "pass", true);
-    _print_config("TG Token", MIMI_PREF_TG, "tg_token", true);
-    _print_config("LLM API Key", MIMI_PREF_LLM, "api_key", true);
-    _print_config("LLM Model", MIMI_PREF_LLM, "model", false);
-    _print_config("LLM Provider", MIMI_PREF_LLM, "provider", false);
-    _print_config("Proxy Host", MIMI_PREF_PROXY, "proxy_host", false);
-    _print_config_u16("Proxy Port", MIMI_PREF_PROXY, "proxy_host");
-    _print_config("Search Key", MIMI_PREF_SEARCH, "api_key", true);
+    _print_config("WiFi SSID",          MIMI_PREF_WIFI,     MIMI_PREF_WIFI_SSID,        false);
+    _print_config("WiFi Pass",          MIMI_PREF_WIFI,     MIMI_PREF_WIFI_PASSWORD,    true);
+    _print_config("TG Token",           MIMI_PREF_TG,       MIMI_PREF_TG_TOKEN,         true);
+    _print_config("FS AppId",           MIMI_PREF_FS,       MIMI_PREF_FS_APPID,         false);
+    _print_config("FS AppSecret",       MIMI_PREF_FS,       MIMI_PREF_FS_APPSECRET,     true);
+    _print_config("LLM API Key",        MIMI_PREF_LLM,      MIMI_PREF_LLM_APIKEY,       true);
+    _print_config("LLM API Url",        MIMI_PREF_LLM,      MIMI_PREF_LLM_APIURL,       false);
+    _print_config("LLM Model",          MIMI_PREF_LLM,      MIMI_PREF_LLM_MODEL,        false);
+    _print_config("LLM Provider",       MIMI_PREF_LLM,      MIMI_PREF_LLM_PROVIDER,     false);
+    _print_config("Proxy Host",         MIMI_PREF_PROXY,    MIMI_PREF_PROXY_HOST,       false);
+    _print_config_u16("Proxy Port",     MIMI_PREF_PROXY,    MIMI_PREF_PROXY_PORT            );
+    _print_config("Search Provider",    MIMI_PREF_SEARCH,   MIMI_PREF_SEARCH_PROVIDER,    false);
+    _print_config("Brave Key",          MIMI_PREF_SEARCH,   MIMI_PREF_SEARCH_BRAVEKEY,    true);
+    _print_config("Tavily Key",         MIMI_PREF_SEARCH,   MIMI_PREF_SEARCH_TAVILYKEY,    true);
     printf("=============================\n");
     return 0;
 }
@@ -580,12 +624,67 @@ static int cmd_web_search(int argc, char **argv)
     return ret ? 0 : 1;
 }
 
-bool MimiSerialCli::start() {
+/**
+ * cmd: talk  word [word2 [word3]]
+ */
+static int cmd_talk(int argc, char **argv)
+{
+    if (argc < 2) {
+        printf("argument wrong.\n");
+        return 1;
+    }
 
+    String text;
+    for (int i=1; i<argc; i++) {
+        text += (String(argv[i]) + " ");
+    }
+
+    MimiApplication *app = (MimiApplication *)(&Application::GetInstance());
+    MimiMsg msg;
+    memset(&msg, 0, sizeof(msg));
+    strncpy(msg.channel, MIMI_CHAN_CLI, sizeof(msg.channel) - 1);
+    strncpy(msg.chat_id, "cli", sizeof(msg.chat_id) - 1);
+    msg.content = strdup(text.c_str());
+    if (!msg.content) {
+        printf("Out of memory.\n");
+        return 1;
+    }
+
+    if (!app->pushMessage(&msg)) {
+        MIMI_LOGW(TAG, "Inbound queue full, dropping message");
+        free(msg.content);
+        return 1;
+    }
+
+    return 0;
+}
+
+/**
+ * cmd: print_message
+ */
+static int cmd_print_message(int argc, char **argv)
+{
+    MimiMsg msg;
+    if (xQueueReceive(g_serialcli->msg_queue(), &msg, 1000) == pdTRUE) { //阻塞
+        printf("%s\n", msg.content);
+        free(msg.content);
+        return 0;
+    }
+
+    return 1;
+}
+
+bool MimiSerialCli::start() {
     //console prompt. By default it is "ESP32>"
     _console.setPrompt("mimi> ");
 
+#if CONFIG_USE_UART1==1
+    _console.begin(115200, CONFIG_UART1_RX, CONFIG_UART1_TX, UART_NUM_1);
+    MIMI_LOGI(TAG, "MimiClaw console on UART1(rx=GPIO%d,tx=GPIO%d), BAUD=115200", CONFIG_UART1_RX, CONFIG_UART1_TX);
+#else
     _console.begin(115200);
+    MIMI_LOG(TAG, "MimiClaw Console on UART0, BAUD=115200");
+#endif
 
     //Register builtin commands like 'reboot', 'sysinfo', or 'meminfo'
     //_console.registerSystemCommands();
@@ -650,9 +749,17 @@ bool MimiSerialCli::start() {
     _console.registerCommand(ESP32Console::ConsoleCommand("heap_info", 
         &cmd_heap_info, "Show heap memory usage"));
 
-    /* set_search_key */
-    _console.registerCommand(ESP32Console::ConsoleCommand("set_search_key", 
-        &cmd_set_search_key, "Set Brave Search API key for web_search tool", "Brave Search API key"));
+    /* set_brave_key */
+    _console.registerCommand(ESP32Console::ConsoleCommand("set_brave_key", 
+        &cmd_set_brave_key, "Set brave key for web_search tool", "Brave key"));
+
+    /* set_tavily_key */
+    _console.registerCommand(ESP32Console::ConsoleCommand("set_tavily_key", 
+        &cmd_set_tavily_key, "Set tavily key for web_search tool", "Tavily key"));
+
+    /* set_search_provider */
+    _console.registerCommand(ESP32Console::ConsoleCommand("set_search_provider", 
+        &cmd_set_search_provider, "Set Search provider for web_search tool", "Search provider (Brave|Tavily)"));
 
     /* set_proxy */
     _console.registerCommand(ESP32Console::ConsoleCommand("set_proxy", 
@@ -686,6 +793,10 @@ bool MimiSerialCli::start() {
     _console.registerCommand(ESP32Console::ConsoleCommand("web_search", 
         &cmd_web_search, "Run web search tool directly (e.g. web_search \"latest esp-idf\")", "Search query"));
 
+    /* talk */
+    _console.registerCommand(ESP32Console::ConsoleCommand("talk", 
+        &cmd_talk, "Talk with mimiclaw"));
+
     /* restart */
     _console.registerCommand(ESP32Console::ConsoleCommand("restart", 
         [](int argc, char **argv) -> int {
@@ -694,6 +805,28 @@ bool MimiSerialCli::start() {
             return EXIT_SUCCESS;
         }, "Restart the device"));
 
+    /* print_message */
+    _console.registerCommand(ESP32Console::ConsoleCommand("print_message", 
+        &cmd_print_message, "Print message."));
+        
     MIMI_LOGI(TAG, "Serial CLI started");
+    return true;
+}
+
+bool MimiSerialCli::sendMessage(const char* chat_id, const char* text) {
+    printf("%s\n", text);
+
+    MimiMsg msg;
+    memset(&msg, 0, sizeof(msg));
+    strncpy(msg.chat_id, chat_id, sizeof(msg.chat_id) - 1);
+    msg.content = strdup(text);
+
+    if (xQueueSend(_msg_queue, &msg, pdMS_TO_TICKS(1000)) != pdTRUE) {
+        MIMI_LOGW(TAG, "queue full, dropping message");
+        return false;
+    }
+
+    int ret = 0;
+    esp_console_run("print_message", &ret);
     return true;
 }

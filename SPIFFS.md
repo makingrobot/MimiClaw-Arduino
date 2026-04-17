@@ -1,7 +1,7 @@
-### SPIFFS分区
+### SPIFFS存储
 
-persist_data文件夹内的文件是程序中要用到的，存放到spiffs分区。<br/>
-spiffs分区还用于存储对话信息，记忆信息。
+persist_data文件夹内的文件是程序中要用到的，可存放到spiffs分区。<br/>
+持久化存储还包括对话信息，记忆信息等。
 
 #### SPIFFS镜像生成和烧录步骤
 
