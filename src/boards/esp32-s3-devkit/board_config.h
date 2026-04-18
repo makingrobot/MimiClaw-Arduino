@@ -9,7 +9,7 @@
  * 本文件主要用于配置硬件相关的设置，如引脚
  */
 
-#define BUILTIN_LED_PIN                     GPIO_NUM_48
+#define LED_PIN                             GPIO_NUM_9
 
 #define SD_CLK_PIN                          GPIO_NUM_NC 
 #define SD_MISO_PIN                         GPIO_NUM_NC 

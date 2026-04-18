@@ -167,9 +167,9 @@ bool tool_get_time_execute(const char* input_json, char* output, size_t output_s
 
 static bool validatePath(const char* path) {
     if (!path) return false;
-    size_t baseLen = strlen(MIMI_SPIFFS_BASE);
-    if (strncmp(path, MIMI_SPIFFS_BASE, baseLen) != 0) return false;
-    if (baseLen > 0 && MIMI_SPIFFS_BASE[baseLen - 1] != '/') {
+    size_t baseLen = strlen(MIMI_FILE_BASE);
+    if (strncmp(path, MIMI_FILE_BASE, baseLen) != 0) return false;
+    if (baseLen > 0 && MIMI_FILE_BASE[baseLen - 1] != '/') {
         if (path[baseLen] != '/') return false;
     }
     if (strstr(path, "..") != NULL) return false;
@@ -185,7 +185,7 @@ bool tool_read_file_execute(const char* input_json, char* output, size_t output_
 
     const char* path = doc["path"] | "";
     if (!validatePath(path)) {
-        snprintf(output, output_size, "Error: path must start with %s/", MIMI_SPIFFS_BASE);
+        snprintf(output, output_size, "Error: path must start with %s/", MIMI_FILE_BASE);
         return false;
     }
 
@@ -217,7 +217,7 @@ bool tool_write_file_execute(const char* input_json, char* output, size_t output
     const char* content = doc["content"] | (const char*)nullptr;
 
     if (!validatePath(path)) {
-        snprintf(output, output_size, "Error: path must start with %s/", MIMI_SPIFFS_BASE);
+        snprintf(output, output_size, "Error: path must start with %s/", MIMI_FILE_BASE);
         return false;
     }
     if (!content) {
@@ -252,7 +252,7 @@ bool tool_edit_file_execute(const char* input_json, char* output, size_t output_
     const char* newStr = doc["new_string"] | (const char*)nullptr;
 
     if (!validatePath(path)) {
-        snprintf(output, output_size, "Error: path must start with %s/", MIMI_SPIFFS_BASE);
+        snprintf(output, output_size, "Error: path must start with %s/", MIMI_FILE_BASE);
         return false;
     }
     if (!oldStr || !newStr) {
@@ -300,7 +300,7 @@ bool tool_list_dir_execute(const char* input_json, char* output, size_t output_s
     FileSystem *file_system = Board::GetInstance().GetFileSystem();
     File root = file_system->OpenFile("/");
     if (!root) {
-        snprintf(output, output_size, "Error: cannot open SPIFFS");
+        snprintf(output, output_size, "Error: cannot open file");
         return false;
     }
 
@@ -309,16 +309,16 @@ bool tool_list_dir_execute(const char* input_json, char* output, size_t output_s
     File file = root.openNextFile();
     while (file && off < output_size - 1) {
         String fullPath = String(file.name());
-        // SPIFFS paths may or may not include leading /
+        // file paths may or may not include leading /
         if (!fullPath.startsWith("/")) fullPath = "/" + fullPath;
-        String spiffsPath = String(MIMI_SPIFFS_BASE) + fullPath;
+        String filePath = String(MIMI_FILE_BASE) + fullPath;
         
-        if (prefix && strncmp(spiffsPath.c_str(), prefix, strlen(prefix)) != 0) {
+        if (prefix && strncmp(filePath.c_str(), prefix, strlen(prefix)) != 0) {
             file = root.openNextFile();
             continue;
         }
 
-        off += snprintf(output + off, output_size - off, "%s\n", spiffsPath.c_str());
+        off += snprintf(output + off, output_size - off, "%s\n", filePath.c_str());
         count++;
         file = root.openNextFile();
     }
@@ -341,8 +341,8 @@ void MimiToolRegistry::registerBuiltinTools() {
     // read_file
     static const MimiTool rf = {
         "read_file",
-        "Read a file from SPIFFS storage. Path must start with " MIMI_SPIFFS_BASE "/.",
-        "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"Absolute path starting with " MIMI_SPIFFS_BASE "/\"}},\"required\":[\"path\"]}",
+        "Read a file from FILE storage. Path must start with " MIMI_FILE_BASE "/.",
+        "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"Absolute path starting with " MIMI_FILE_BASE "/\"}},\"required\":[\"path\"]}",
         tool_read_file_execute
     };
     registerTool(&rf);
@@ -350,8 +350,8 @@ void MimiToolRegistry::registerBuiltinTools() {
     // write_file
     static const MimiTool wf = {
         "write_file",
-        "Write or overwrite a file on SPIFFS storage. Path must start with " MIMI_SPIFFS_BASE "/.",
-        "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"Absolute path starting with " MIMI_SPIFFS_BASE "/\"},\"content\":{\"type\":\"string\",\"description\":\"File content to write\"}},\"required\":[\"path\",\"content\"]}",
+        "Write or overwrite a file on FILE storage. Path must start with " MIMI_FILE_BASE "/.",
+        "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"Absolute path starting with " MIMI_FILE_BASE "/\"},\"content\":{\"type\":\"string\",\"description\":\"File content to write\"}},\"required\":[\"path\",\"content\"]}",
         tool_write_file_execute
     };
     registerTool(&wf);
@@ -359,8 +359,8 @@ void MimiToolRegistry::registerBuiltinTools() {
     // edit_file
     static const MimiTool ef = {
         "edit_file",
-        "Find and replace text in a file on SPIFFS. Replaces first occurrence of old_string with new_string.",
-        "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"Absolute path starting with " MIMI_SPIFFS_BASE "/\"},\"old_string\":{\"type\":\"string\",\"description\":\"Text to find\"},\"new_string\":{\"type\":\"string\",\"description\":\"Replacement text\"}},\"required\":[\"path\",\"old_string\",\"new_string\"]}",
+        "Find and replace text in a file on FILE store. Replaces first occurrence of old_string with new_string.",
+        "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"Absolute path starting with " MIMI_FILE_BASE "/\"},\"old_string\":{\"type\":\"string\",\"description\":\"Text to find\"},\"new_string\":{\"type\":\"string\",\"description\":\"Replacement text\"}},\"required\":[\"path\",\"old_string\",\"new_string\"]}",
         tool_edit_file_execute
     };
     registerTool(&ef);
@@ -368,7 +368,7 @@ void MimiToolRegistry::registerBuiltinTools() {
     // list_dir
     static const MimiTool ld = {
         "list_dir",
-        "List files on SPIFFS storage, optionally filtered by path prefix.",
+        "List files on FILE storage, optionally filtered by path prefix.",
         "{\"type\":\"object\",\"properties\":{\"prefix\":{\"type\":\"string\",\"description\":\"Optional path prefix filter\"}},\"required\":[]}",
         tool_list_dir_execute
     };

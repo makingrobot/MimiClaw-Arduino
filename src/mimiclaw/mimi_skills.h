@@ -19,6 +19,7 @@ public:
      * @return      Number of bytes written
      */
     size_t buildSummary(char* buf, size_t size);
+    void installSkill(const char* filename, const char* content);
 
 private:
     void installBuiltin(const char* filename, const char* content);

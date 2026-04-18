@@ -7,6 +7,7 @@
 #include <Preferences.h>
 #include "mimi_application.h"
 #include "mimi_bus.h"
+#include "mimi_websearch.h"
 #include "src/framework/board/board.h"
 #include "src/framework/file/file_system.h"
 
@@ -382,8 +383,8 @@ static int cmd_skill_search(int argc, char **argv)
     const char *keyword = argv[1];
 
     FileSystem *fsys = Board::GetInstance().GetFileSystem();
-    if (!fsys->ExistsFile(MIMI_SPIFFS_BASE)) {
-        printf("Cannot open " MIMI_SPIFFS_BASE ".\n");
+    if (!fsys->ExistsFile(MIMI_FILE_BASE)) {
+        printf("Cannot open " MIMI_FILE_BASE ".\n");
         return 1;
     }
 
@@ -391,7 +392,7 @@ static int cmd_skill_search(int argc, char **argv)
     const size_t prefix_len = strlen(prefix);
     int matches = 0;
 
-    File dir = fsys->OpenFile(MIMI_SPIFFS_BASE);
+    File dir = fsys->OpenFile(MIMI_FILE_BASE);
     File f;
     while (f = dir.openNextFile()) {
         const char *name = f.name();
@@ -402,7 +403,7 @@ static int cmd_skill_search(int argc, char **argv)
         if (strcmp(name + name_len - 3, ".md") != 0) continue;
 
         char full_path[296];
-        snprintf(full_path, sizeof(full_path), MIMI_SPIFFS_BASE "/%s", name);
+        snprintf(full_path, sizeof(full_path), MIMI_FILE_BASE "/%s", name);
 
         bool file_matched = _contains_nocase(name, keyword);
         int matched_line = 0;
@@ -593,6 +594,22 @@ static int cmd_web_search(int argc, char **argv)
         return 1;
     }
 
+    MimiApplication *app = (MimiApplication *)(&Application::GetInstance());
+    MimiWebsearch& search = app->websearch();
+    if (search.provider().isEmpty()) {
+        printf("Not config provider.");
+        return 1;
+    }
+
+    if (search.provider()=="brave" && search.brave_key().isEmpty()) {
+        printf("Not config brave key.");
+        return 1;
+
+    } else if (search.provider()=="tavily" && search.tavily_key().isEmpty()) {
+        printf("Not config tavily key.");
+        return 1;
+    }
+
     String query;
     for (int i=1; i<argc; i++) {
         query += (String(argv[i]) + " ");
@@ -611,8 +628,7 @@ static int cmd_web_search(int argc, char **argv)
         return 1;
     }
 
-    MimiApplication *app = (MimiApplication *)(&Application::GetInstance());
-    bool ret = app->searchWeb(query.c_str(), output, 4096);
+    bool ret = search.search(query.c_str(), output, 4096);
    
     printf("web_search status: %d\n", ret ? 0 : 1);
     printf("%s\n", output[0] ? output : "(empty)");

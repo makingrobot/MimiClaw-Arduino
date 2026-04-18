@@ -23,7 +23,7 @@ static const char BUILTIN_DAILY_BRIEFING[] PROGMEM =
     "When the user asks for a daily briefing, morning update, or \"what's new today\".\n\n"
     "## How to use\n"
     "1. Use get_current_time for today's date\n"
-    "2. Read " MIMI_SPIFFS_MEMORY_DIR "/MEMORY.md for user preferences\n"
+    "2. Read " MIMI_FILE_MEMORY_DIR "/MEMORY.md for user preferences\n"
     "3. Read today's daily note if it exists\n"
     "4. Use web_search for relevant news based on user interests\n"
     "5. Compile a concise briefing\n\n"
@@ -79,6 +79,25 @@ void MimiSkills::installBuiltin(const char* filename, const char* content) {
     MIMI_LOGI(TAG, "Installed built-in skill: %s", path.c_str());
 }
 
+void MimiSkills::installSkill(const char* filename, const char* content) {
+    String path = String(MIMI_SKILLS_PREFIX) + filename + ".md";
+
+    if (_file_system->ExistsFile(path.c_str())) {
+        MIMI_LOGD(TAG, "Skill exists: %s", path.c_str());
+        return;
+    }
+
+    File f = _file_system->OpenFile(path.c_str(), "w");
+    if (!f) {
+        MIMI_LOGE(TAG, "Cannot write skill: %s", path.c_str());
+        return;
+    }
+
+    f.print(content);
+    f.close();
+    MIMI_LOGI(TAG, "Installed skill: %s", path.c_str());
+}
+
 bool MimiSkills::begin(FileSystem *file_system) {
     MIMI_LOGI(TAG, "Initializing skills system");
 
@@ -93,20 +112,20 @@ bool MimiSkills::begin(FileSystem *file_system) {
 }
 
 size_t MimiSkills::buildSummary(char* buf, size_t size) {
-    // Enumerate SPIFFS files matching the skills prefix
+    // Enumerate files matching the skills prefix
     File root = _file_system->OpenFile("/");
     if (!root) {
-        MIMI_LOGW(TAG, "Cannot open SPIFFS root");
+        MIMI_LOGW(TAG, "Cannot open FILE storage root");
         buf[0] = '\0';
         return 0;
     }
 
     String prefix = String(MIMI_SKILLS_PREFIX);
-    // Remove MIMI_SPIFFS_BASE from prefix for matching SPIFFS filenames
+    // Remove MIMI_FILE_BASE from prefix for matching SPIFFS filenames
     // SPIFFS filenames are like "/skills/weather.md"
     String matchPrefix = prefix;
-    if (matchPrefix.startsWith(MIMI_SPIFFS_BASE)) {
-        matchPrefix = matchPrefix.substring(strlen(MIMI_SPIFFS_BASE));
+    if (matchPrefix.startsWith(MIMI_FILE_BASE)) {
+        matchPrefix = matchPrefix.substring(strlen(MIMI_FILE_BASE));
     }
 
     size_t off = 0;
@@ -137,7 +156,7 @@ size_t MimiSkills::buildSummary(char* buf, size_t size) {
         }
 
         // Build full path for read_file reference
-        String fullPath = String(MIMI_SPIFFS_BASE) + name;
+        String fullPath = String(MIMI_FILE_BASE) + name;
 
         off += snprintf(buf + off, size - off,
             "- **%s**: %s (read with: read_file %s)\n",

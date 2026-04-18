@@ -2,6 +2,9 @@
 #include <esp_heap_caps.h>
 #include "src/framework/board/board.h"
 #include "src/framework/file/file_system.h"
+#include "ArduinoJson.h"
+#include "arduino_json_psram.h"
+#include "src/boards/esp32-s3-devkit/esp32_s3_board.h"
 
 #define TAG "mimi"
 
@@ -117,8 +120,7 @@ bool MimiApplication::OnInit() {
     MIMI_LOGI(TAG, "All subsystems initialized");
 
     // 添加工具
-    _cron.addTools(&_tools);
-    _websearch.addTools(&_tools);
+    addTools();
 
     // start
     bool state = Start();
@@ -295,6 +297,25 @@ bool MimiApplication::heartbeatTrigger() {
     return _heartbeat.trigger();
 }
 
-bool MimiApplication::searchWeb(const char* query, char* output, size_t output_size) {
-    return _websearch.search(query, output, output_size);
+
+
+
+void MimiApplication::addTools() {
+
+    std::vector<const MimiTool*>& cron_tools = _cron.tools();
+    for (const MimiTool *tool : cron_tools) {
+        _tools.registerTool(tool);
+    }
+
+    std::vector<const MimiTool*>& ws_tools = _websearch.tools();
+    for (const MimiTool *tool : ws_tools) {
+        _tools.registerTool(tool);
+    }
+
+    Esp32S3Board *board = (Esp32S3Board *)(&Board::GetInstance());
+    std::vector<const MimiTool*>& board_tools = board->tools();
+    for (const MimiTool *tool : board_tools) {
+        _tools.registerTool(tool);
+    }
+
 }

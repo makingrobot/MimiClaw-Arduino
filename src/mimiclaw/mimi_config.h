@@ -134,27 +134,27 @@
 #define MIMI_OUTBOUND_CORE           0
 #endif
 
-// ── SPIFFS / Storage ───────────────────────────────────────────
-#ifndef MIMI_SPIFFS_BASE
-#define MIMI_SPIFFS_BASE             "/spiffs"
+// ── FILE / Storage ───────────────────────────────────────────
+#ifndef MIMI_FILE_BASE
+#define MIMI_FILE_BASE             "/spiffs"
 #endif
-#ifndef MIMI_SPIFFS_CONFIG_DIR
-#define MIMI_SPIFFS_CONFIG_DIR       MIMI_SPIFFS_BASE "/config"
+#ifndef MIMI_FILE_CONFIG_DIR
+#define MIMI_FILE_CONFIG_DIR       MIMI_FILE_BASE "/config"
 #endif
-#ifndef MIMI_SPIFFS_MEMORY_DIR
-#define MIMI_SPIFFS_MEMORY_DIR       MIMI_SPIFFS_BASE "/memory"
+#ifndef MIMI_FILE_MEMORY_DIR
+#define MIMI_FILE_MEMORY_DIR       MIMI_FILE_BASE "/memory"
 #endif
-#ifndef MIMI_SPIFFS_SESSION_DIR
-#define MIMI_SPIFFS_SESSION_DIR      MIMI_SPIFFS_BASE "/sessions"
+#ifndef MIMI_FILE_SESSION_DIR
+#define MIMI_FILE_SESSION_DIR      MIMI_FILE_BASE "/sessions"
 #endif
 #ifndef MIMI_MEMORY_FILE
-#define MIMI_MEMORY_FILE             MIMI_SPIFFS_MEMORY_DIR "/MEMORY.md"
+#define MIMI_MEMORY_FILE             MIMI_FILE_MEMORY_DIR "/MEMORY.md"
 #endif
 #ifndef MIMI_SOUL_FILE
-#define MIMI_SOUL_FILE               MIMI_SPIFFS_CONFIG_DIR "/SOUL.md"
+#define MIMI_SOUL_FILE               MIMI_FILE_CONFIG_DIR "/SOUL.md"
 #endif
 #ifndef MIMI_USER_FILE
-#define MIMI_USER_FILE               MIMI_SPIFFS_CONFIG_DIR "/USER.md"
+#define MIMI_USER_FILE               MIMI_FILE_CONFIG_DIR "/USER.md"
 #endif
 #ifndef MIMI_CONTEXT_BUF_SIZE
 #define MIMI_CONTEXT_BUF_SIZE        (16 * 1024)
@@ -165,7 +165,7 @@
 
 // ── Cron ───────────────────────────────────────────────────────
 #ifndef MIMI_CRON_FILE
-#define MIMI_CRON_FILE               MIMI_SPIFFS_BASE "/cron.json"
+#define MIMI_CRON_FILE               MIMI_FILE_BASE "/cron.json"
 #endif
 #ifndef MIMI_CRON_MAX_JOBS
 #define MIMI_CRON_MAX_JOBS           16
@@ -176,7 +176,7 @@
 
 // ── Heartbeat ──────────────────────────────────────────────────
 #ifndef MIMI_HEARTBEAT_FILE
-#define MIMI_HEARTBEAT_FILE          MIMI_SPIFFS_BASE "/HEARTBEAT.md"
+#define MIMI_HEARTBEAT_FILE          MIMI_FILE_BASE "/HEARTBEAT.md"
 #endif
 #ifndef MIMI_HEARTBEAT_INTERVAL_MS
 #define MIMI_HEARTBEAT_INTERVAL_MS   (30 * 60 * 1000)
@@ -195,7 +195,7 @@
 
 // ── Skills ─────────────────────────────────────────────────────
 #ifndef MIMI_SKILLS_PREFIX
-#define MIMI_SKILLS_PREFIX           MIMI_SPIFFS_BASE "/skills/"
+#define MIMI_SKILLS_PREFIX           MIMI_FILE_BASE "/skills/"
 #endif
 
 // ── WebSocket ──────────────────────────────────────────────────

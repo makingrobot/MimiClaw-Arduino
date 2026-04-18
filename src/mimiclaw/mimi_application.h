@@ -78,7 +78,6 @@ public:
     void setBraveKey(const char* key);
     void setTavilyKey(const char* key);
     void setSearchProvider(const char* provider);
-    bool searchWeb(const char* query, char* output, size_t output_size);
 
     // --- Memory ---
     MimiMemory& memory() { return _memory; }
@@ -93,6 +92,8 @@ public:
     // --- Skills ---
     MimiSkills& skills() { return _skills; }
     
+    MimiWebsearch& websearch() { return _websearch; }
+
 private:
     MimiBus _bus;
     MimiWiFi _wifi;
@@ -116,6 +117,9 @@ private:
     
     // Outbound dispatch task
     static void outboundTask(void* arg);
+    
+    void addTools();
+
     TaskHandle_t _outboundTaskHandle;
 };
 

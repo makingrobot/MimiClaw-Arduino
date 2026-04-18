@@ -49,7 +49,7 @@ bool MimiMemory::appendToday(const char* note) {
     char dateStr[16];
     getDateStr(dateStr, sizeof(dateStr), 0);
 
-    String path = String(MIMI_SPIFFS_MEMORY_DIR) + "/" + dateStr + ".md";
+    String path = String(MIMI_FILE_MEMORY_DIR) + "/" + dateStr + ".md";
 
     bool exists = _file_system->ExistsFile(path.c_str());
     File f = _file_system->OpenFile(path.c_str(), exists ? "a" : "w");
@@ -74,7 +74,7 @@ bool MimiMemory::readRecent(char* buf, size_t size, int days) {
         char dateStr[16];
         getDateStr(dateStr, sizeof(dateStr), i);
 
-        String path = String(MIMI_SPIFFS_MEMORY_DIR) + "/" + dateStr + ".md";
+        String path = String(MIMI_FILE_MEMORY_DIR) + "/" + dateStr + ".md";
         File f = _file_system->OpenFile(path.c_str(), "r");
         if (!f) continue;
 

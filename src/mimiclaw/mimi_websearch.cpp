@@ -15,8 +15,18 @@
 
 static MimiWebsearch* g_websearch = nullptr;
 
+bool tool_web_search_execute(const char* input_json, char* output, size_t output_size);
+
 MimiWebsearch::MimiWebsearch() {
     g_websearch = this;
+
+    static const MimiTool ws = {
+        "web_search",
+        "Search the web for current information. Use this when you need up-to-date facts, news, weather, or anything beyond your training data.",
+        "{\"type\":\"object\",\"properties\":{\"query\":{\"type\":\"string\",\"description\":\"The search query\"}},\"required\":[\"query\"]}",
+        tool_web_search_execute
+    };
+    _tools.push_back(&ws);
 }
 
 void MimiWebsearch::init() {
@@ -255,15 +265,4 @@ bool tool_web_search_execute(const char* input_json, char* output, size_t output
     bool ret = g_websearch->search(query, output, output_size);
     
     return ret;
-}
-
-void MimiWebsearch::addTools(MimiToolRegistry* registry) {
-    // web_search
-    static const MimiTool ws = {
-        "web_search",
-        "Search the web for current information. Use this when you need up-to-date facts, news, weather, or anything beyond your training data.",
-        "{\"type\":\"object\",\"properties\":{\"query\":{\"type\":\"string\",\"description\":\"The search query\"}},\"required\":[\"query\"]}",
-        tool_web_search_execute
-    };
-    registry->registerTool(&ws);
 }

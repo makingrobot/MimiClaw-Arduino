@@ -1,5 +1,5 @@
 /*
- * MimiClaw - Memory Store (SPIFFS-based)
+ * MimiClaw - Memory Store (FILE-based)
  */
 #ifndef MIMI_MEMORY_H
 #define MIMI_MEMORY_H

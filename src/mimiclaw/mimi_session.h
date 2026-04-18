@@ -1,5 +1,5 @@
 /*
- * MimiClaw - Session Manager (JSONL files on SPIFFS)
+ * MimiClaw - Session Manager (JSONL files on storage)
  */
 #ifndef MIMI_SESSION_H
 #define MIMI_SESSION_H

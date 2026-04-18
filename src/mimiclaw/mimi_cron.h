@@ -4,6 +4,7 @@
 #ifndef MIMI_CRON_H
 #define MIMI_CRON_H
 
+#include <vector>
 #include <Arduino.h>
 #include "mimi_bus.h"
 #include "mimi_tools.h"
@@ -40,7 +41,7 @@ public:
     bool removeJob(const char* jobId);
     void listJobs(const CronJob** jobs, int* count);
 
-    void addTools(MimiToolRegistry* registry);
+    std::vector<const MimiTool*>& tools() { return _tools; }
 
     static const int MAX_JOBS = 16;
 
@@ -50,6 +51,7 @@ private:
     MimiBus* _bus;
     FileSystem *_file_system;
     TaskHandle_t _taskHandle;
+    std::vector<const MimiTool*> _tools;
 
     bool loadJobs();
     bool saveJobs();

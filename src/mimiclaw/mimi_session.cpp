@@ -14,7 +14,7 @@ bool MimiSession::begin(FileSystem *file_system) {
 }
 
 String MimiSession::sessionPath(const char* chat_id) {
-    return String(MIMI_SPIFFS_SESSION_DIR) + "/tg_" + chat_id + ".jsonl";
+    return String(MIMI_FILE_SESSION_DIR) + "/tg_" + chat_id + ".jsonl";
 }
 
 bool MimiSession::append(const char* chat_id, const char* role, const char* content) {
@@ -147,7 +147,7 @@ bool MimiSession::clear(const char* chat_id) {
 void MimiSession::list() {
     File root = _file_system->OpenFile("/");
     if (!root) {
-        MIMI_LOGW(TAG, "Cannot open SPIFFS directory");
+        MIMI_LOGW(TAG, "Cannot open FILE storage root");
         return;
     }
 
