@@ -10,7 +10,7 @@
 
 struct MimiMsg {
     char channel[16];   // "telegram", "feishu", "websocket", "cli", "system"
-    char chat_id[32];   // Telegram/Feishu chat_id or WS client id
+    char chat_id[96];   // Telegram/Feishu chat_id or WS client id
     char* content;      // Heap-allocated message text (caller must free)
 };
 

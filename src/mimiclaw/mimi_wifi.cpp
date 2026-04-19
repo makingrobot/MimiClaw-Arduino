@@ -111,6 +111,6 @@ void MimiWiFi::_onDisconnected(uint8_t reason) {
         WiFi.reconnect();
         _retryCount++;
     } else {
-        MIMI_LOGE(TAG, "Failed to connect after %d retries", MIMI_WIFI_MAX_RETRY);
+        MIMI_LOGE(TAG, __LINE__, "Failed to connect after %d retries", MIMI_WIFI_MAX_RETRY);
     }
 }

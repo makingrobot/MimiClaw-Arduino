@@ -129,7 +129,7 @@ void MimiAgent::processMessage(MimiMsg* msg, char* systemPrompt, char* toolOutpu
         bool ok = _llm->chatWithTools(systemPrompt, messages, toolsJson, &resp);
 
         if (!ok) {
-            MIMI_LOGE(TAG, "LLM call failed");
+            MIMI_LOGE(TAG, __LINE__, "LLM call failed");
             break;
         }
 
@@ -244,7 +244,7 @@ void MimiAgent::agentTask(void* arg) {
     char* toolOutput = (char*)MIMI_CALLOC_PSRAM(1, TOOL_OUTPUT_SIZE);
 
     if (!systemPrompt || !toolOutput) {
-        MIMI_LOGE(TAG, "Failed to allocate PSRAM buffers");
+        MIMI_LOGE(TAG, __LINE__, "Failed to allocate PSRAM buffers");
         free(systemPrompt);
         free(toolOutput);
         vTaskDelete(NULL);

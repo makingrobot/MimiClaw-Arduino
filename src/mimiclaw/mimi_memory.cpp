@@ -36,7 +36,7 @@ bool MimiMemory::readLongTerm(char* buf, size_t size) {
 bool MimiMemory::writeLongTerm(const char* content) {
     File f = _file_system->OpenFile(MIMI_MEMORY_FILE, "w");
     if (!f) {
-        MIMI_LOGE(TAG, "Cannot write %s", MIMI_MEMORY_FILE);
+        MIMI_LOGE(TAG, __LINE__, "Cannot write %s", MIMI_MEMORY_FILE);
         return false;
     }
     f.print(content);
@@ -54,7 +54,7 @@ bool MimiMemory::appendToday(const char* note) {
     bool exists = _file_system->ExistsFile(path.c_str());
     File f = _file_system->OpenFile(path.c_str(), exists ? "a" : "w");
     if (!f) {
-        MIMI_LOGE(TAG, "Cannot open %s", path.c_str());
+        MIMI_LOGE(TAG, __LINE__, "Cannot open %s", path.c_str());
         return false;
     }
 

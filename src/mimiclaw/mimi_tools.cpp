@@ -26,7 +26,7 @@ bool MimiToolRegistry::begin(FileSystem *file_system, MimiProxy* proxy) {
 
 void MimiToolRegistry::registerTool(const MimiTool* tool) {
     if (_toolCount >= MAX_TOOLS) {
-        MIMI_LOGE(TAG, "Tool registry full");
+        MIMI_LOGE(TAG, __LINE__, "Tool registry full");
         return;
     }
     _tools[_toolCount++] = *tool;

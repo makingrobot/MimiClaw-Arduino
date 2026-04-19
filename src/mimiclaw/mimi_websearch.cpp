@@ -89,7 +89,7 @@ bool MimiWebsearch::search(const char* query, char* output, size_t output_size) 
     
     if (strcmp(_provider.c_str(), "brave")==0) {
         if (_brave_key.isEmpty()) {
-            MIMI_LOGE(TAG, "Brave key not config.");
+            MIMI_LOGE(TAG, __LINE__, "Brave key not config.");
             return false;
         }
 
@@ -97,14 +97,14 @@ bool MimiWebsearch::search(const char* query, char* output, size_t output_size) 
 
     } else if (strcmp(_provider.c_str(), "tavily") == 0) {
         if (_tavily_key.isEmpty()) {
-            MIMI_LOGE(TAG, "Tavily key not config.");
+            MIMI_LOGE(TAG, __LINE__, "Tavily key not config.");
             return false;
         }
 
         return tavilySearch(query, output, output_size);
     }
 
-    MIMI_LOGE(TAG, "Not specified search provider.");
+    MIMI_LOGE(TAG, __LINE__, "Not specified search provider.");
     return false;
 }
 

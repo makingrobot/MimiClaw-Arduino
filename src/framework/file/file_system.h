@@ -38,13 +38,13 @@ public:
     bool RenameFile(const char *path, const char *new_path);
     bool DeleteFile(const char *path); 
 
-    void setTotalBytes(uint32_t bytes) { total_bytes_ = bytes; }
+    void SetTotalBytes(uint32_t bytes) { total_bytes_ = bytes; }
     uint32_t totalBytes() const { return total_bytes_; }
     
-    void setFreeBytes(uint32_t bytes) { free_bytes_ = bytes; }
+    void SetFreeBytes(uint32_t bytes) { free_bytes_ = bytes; }
     uint32_t freeBytes() const { return free_bytes_; }
 
-    void setType(const std::string& type) { type_ = type; }
+    void SetType(const std::string& type) { type_ = type; }
     const std::string& type() const { return type_; }
 
     void SetActionListener(std::function<void(FileAction action, const std::string&)> listener)

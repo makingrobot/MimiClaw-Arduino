@@ -155,7 +155,7 @@ bool MimiWS::start() {
     // Create a task to run the WS loop
     BaseType_t ok = xTaskCreate(wsTask, "ws_srv", 4096, this, 4, &_taskHandle);
     if (ok != pdPASS) {
-        MIMI_LOGE(TAG, "Failed to create WS task");
+        MIMI_LOGE(TAG, __LINE__, "Failed to create WS task");
         return false;
     }
 

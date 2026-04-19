@@ -48,7 +48,7 @@ bool MimiHeartbeat::hasTasks() {
 
 bool MimiHeartbeat::sendHeartbeat() {
     if (!hasTasks()) {
-        MIMI_LOGD(TAG, "No actionable tasks in HEARTBEAT.md");
+        MIMI_LOGD(TAG, __LINE__, "No actionable tasks in HEARTBEAT.md");
         return false;
     }
 
@@ -58,7 +58,7 @@ bool MimiHeartbeat::sendHeartbeat() {
     strncpy(msg.chat_id, "heartbeat", sizeof(msg.chat_id) - 1);
     msg.content = strdup(HEARTBEAT_PROMPT);
     if (!msg.content) {
-        MIMI_LOGE(TAG, "Failed to allocate heartbeat prompt");
+        MIMI_LOGE(TAG, __LINE__, "Failed to allocate heartbeat prompt");
         return false;
     }
 
@@ -86,12 +86,12 @@ bool MimiHeartbeat::start() {
                           pdMS_TO_TICKS(MIMI_HEARTBEAT_INTERVAL_MS),
                           pdTRUE, nullptr, timerCallback);
     if (!_timer) {
-        MIMI_LOGE(TAG, "Failed to create heartbeat timer");
+        MIMI_LOGE(TAG, __LINE__, "Failed to create heartbeat timer");
         return false;
     }
 
     if (xTimerStart(_timer, pdMS_TO_TICKS(1000)) != pdPASS) {
-        MIMI_LOGE(TAG, "Failed to start heartbeat timer");
+        MIMI_LOGE(TAG, __LINE__, "Failed to start heartbeat timer");
         return false;
     }
 

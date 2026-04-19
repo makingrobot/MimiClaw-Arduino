@@ -9,7 +9,7 @@ bool MimiBus::begin() {
     _inQueue = xQueueCreate(MIMI_BUS_QUEUE_LEN, sizeof(MimiMsg));
     _outQueue = xQueueCreate(MIMI_BUS_QUEUE_LEN, sizeof(MimiMsg));
     if (!_inQueue || !_outQueue) {
-        MIMI_LOGE(TAG, "Failed to create message queues");
+        MIMI_LOGE(TAG, __LINE__, "Failed to create message queues");
         return false;
     }
     MIMI_LOGI(TAG, "Message bus initialized (depth %d)", MIMI_BUS_QUEUE_LEN);

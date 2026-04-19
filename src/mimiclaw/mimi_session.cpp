@@ -14,14 +14,14 @@ bool MimiSession::begin(FileSystem *file_system) {
 }
 
 String MimiSession::sessionPath(const char* chat_id) {
-    return String(MIMI_FILE_SESSION_DIR) + "/tg_" + chat_id + ".jsonl";
+    return String(MIMI_FILE_SESSION_DIR) + "/sess_" + chat_id + ".jsonl";
 }
 
 bool MimiSession::append(const char* chat_id, const char* role, const char* content) {
     String path = sessionPath(chat_id);
     File f = _file_system->OpenFile(path.c_str(), "a");
     if (!f) {
-        MIMI_LOGE(TAG, "Cannot open session file %s", path.c_str());
+        MIMI_LOGE(TAG, __LINE__, "Cannot open session file %s", path.c_str());
         return false;
     }
 

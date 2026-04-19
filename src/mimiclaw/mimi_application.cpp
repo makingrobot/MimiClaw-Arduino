@@ -6,7 +6,7 @@
 #include "arduino_json_psram.h"
 #include "src/boards/esp32-s3-devkit/esp32_s3_board.h"
 
-#define TAG "mimi"
+#define TAG "mimiapp"
 
 void* create_application() { 
     return new MimiApplication();
@@ -30,7 +30,7 @@ bool MimiApplication::OnInit() {
     // Get FileSystem
     FileSystem *file_system = Board::GetInstance().GetFileSystem();
     if (file_system == nullptr) {
-        MIMI_LOGE(TAG, "FileSystem mount failed");
+        MIMI_LOGE(TAG, __LINE__, "FileSystem mount failed");
         return false;
     }
     MIMI_LOGI(TAG, "fs type: %s, totalbytes: %ld, freebytes: %ld", 
@@ -38,70 +38,70 @@ bool MimiApplication::OnInit() {
 
     // Initialize subsystems
     if (!_bus.begin()) {
-        MIMI_LOGE(TAG, "Bus init failed");
+        MIMI_LOGE(TAG, __LINE__, "Bus init failed");
         return false;
     }
 
     if (!_memory.begin(file_system)) {
-        MIMI_LOGE(TAG, "Memory init failed");
+        MIMI_LOGE(TAG, __LINE__, "Memory init failed");
         return false;
     }
 
     if (!_skills.begin(file_system)) {
-        MIMI_LOGE(TAG, "Skills init failed");
+        MIMI_LOGE(TAG, __LINE__, "Skills init failed");
         return false;
     }
 
     if (!_session.begin(file_system)) {
-        MIMI_LOGE(TAG, "Session init failed");
+        MIMI_LOGE(TAG, __LINE__, "Session init failed");
         return false;
     }
 
     if (!_wifi.begin()) {
-        MIMI_LOGE(TAG, "WiFi init failed");
+        MIMI_LOGE(TAG, __LINE__, "WiFi init failed");
         return false;
     }
 
     if (!_proxy.begin()) {
-        MIMI_LOGE(TAG, "Proxy init failed");
+        MIMI_LOGE(TAG, __LINE__, "Proxy init failed");
         return false;
     }
 
     if (!_telegram.begin(&_bus)) {
-        MIMI_LOGE(TAG, "Telegram init failed");
+        MIMI_LOGE(TAG, __LINE__, "Telegram init failed");
         return false;
     }
     _telegram.setProxy(&_proxy);
 
     if (!_feishu.begin(&_bus)) {
-        MIMI_LOGE(TAG, "Feishu init failed");
+        MIMI_LOGE(TAG, __LINE__, "Feishu init failed");
         return false;
     }
     _feishu.setProxy(&_proxy);
 
     if (!_llm.begin()) {
-        MIMI_LOGE(TAG, "LLM init failed");
+        MIMI_LOGE(TAG, __LINE__, "LLM init failed");
         return false;
     }
     _llm.setProxy(&_proxy);
 
     if (!_tools.begin(file_system, &_proxy)) {
-        MIMI_LOGE(TAG, "Tools init failed");
+        MIMI_LOGE(TAG, __LINE__, "Tools init failed");
         return false;
     }
 
     if (!_cron.begin(&_bus, file_system)) {
-        MIMI_LOGE(TAG, "Cron init failed");
+        MIMI_LOGE(TAG, __LINE__, "Cron init failed");
         return false;
     }
 
     if (!_heartbeat.begin(&_bus, file_system)) {
-        MIMI_LOGE(TAG, "Heartbeat init failed");
+        MIMI_LOGE(TAG, __LINE__, "Heartbeat init failed");
         return false;
     }
 
     if (!_ws.begin(&_bus)) {
-        MIMI_LOGE(TAG, "WS init failed");
+        MIMI_LOGE(TAG, __LINE__, "WS init failed");
         return false;
     }
 
@@ -111,16 +111,16 @@ bool MimiApplication::OnInit() {
     _context.setFileSystem(file_system);
 
     if (!_agent.begin(&_bus, &_llm, &_session, &_tools, &_context)) {
-        MIMI_LOGE(TAG, "Agent init failed");
+        MIMI_LOGE(TAG, __LINE__, "Agent init failed");
         return false;
     }
 
     _websearch.init();
     
+    registerTools();
+    installSkills();
+    
     MIMI_LOGI(TAG, "All subsystems initialized");
-
-    // 添加工具
-    addTools();
 
     // start
     bool state = Start();
@@ -140,7 +140,7 @@ void MimiApplication::outboundTask(void* arg) {
 
         if (strcmp(msg.channel, MIMI_CHAN_TELEGRAM) == 0) {
             if (!self->_telegram.sendMessage(msg.chat_id, msg.content)) {
-                MIMI_LOGE(TAG, "Telegram send failed for %s", msg.chat_id);
+                MIMI_LOGE(TAG, __LINE__, "Telegram send failed for %s", msg.chat_id);
             } else {
                 MIMI_LOGI(TAG, "Telegram send success for %s (%d bytes)",
                           msg.chat_id, (int)strlen(msg.content));
@@ -158,7 +158,7 @@ void MimiApplication::outboundTask(void* arg) {
 
         } else if (strcmp(msg.channel, MIMI_CHAN_FEISHU) == 0) {
             if (!self->_feishu.sendMessage(msg.chat_id, msg.content)) {
-                MIMI_LOGE(TAG, "Feishu send failed for %s", msg.chat_id);
+                MIMI_LOGE(TAG, __LINE__, "Feishu send failed for %s", msg.chat_id);
             } else {
                 MIMI_LOGI(TAG, "Feishu send success for %s (%d bytes)",
                           msg.chat_id, (int)strlen(msg.content));
@@ -196,13 +196,13 @@ bool MimiApplication::Start() {
         outboundTask, "outbound", MIMI_OUTBOUND_STACK,
         this, MIMI_OUTBOUND_PRIO, &_outboundTaskHandle, MIMI_OUTBOUND_CORE);
     if (ok != pdPASS) {
-        MIMI_LOGE(TAG, "Failed to create outbound task");
+        MIMI_LOGE(TAG, __LINE__, "Failed to create outbound task");
         return false;
     }
 
     // Start services
     if (!_agent.start()) {
-        MIMI_LOGE(TAG, "Agent start failed");
+        MIMI_LOGE(TAG, __LINE__, "Agent start failed");
         return false;
     }
 
@@ -289,19 +289,11 @@ bool MimiApplication::pushMessage(const MimiMsg* msg) {
     return _bus.pushInbound(msg);
 }
 
-void MimiApplication::registerTool(const MimiTool* tool) {
-    _tools.registerTool(tool);
-}
-
 bool MimiApplication::heartbeatTrigger() {
     return _heartbeat.trigger();
 }
 
-
-
-
-void MimiApplication::addTools() {
-
+void MimiApplication::registerTools() {
     std::vector<const MimiTool*>& cron_tools = _cron.tools();
     for (const MimiTool *tool : cron_tools) {
         _tools.registerTool(tool);
@@ -313,9 +305,14 @@ void MimiApplication::addTools() {
     }
 
     Esp32S3Board *board = (Esp32S3Board *)(&Board::GetInstance());
-    std::vector<const MimiTool*>& board_tools = board->tools();
-    for (const MimiTool *tool : board_tools) {
+    for (const MimiTool *tool : board->tools()) {
         _tools.registerTool(tool);
     }
+}
 
+void MimiApplication::installSkills() {
+    Esp32S3Board *board = (Esp32S3Board *)(&Board::GetInstance());
+    for (const SkillInfo *info : board->skills()) {
+        _skills.installSkill(info);
+    }
 }

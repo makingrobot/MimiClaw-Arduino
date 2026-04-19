@@ -45,12 +45,8 @@ static const char BUILTIN_SKILL_CREATOR[] PROGMEM =
     "- Focus on WHAT to do, not HOW\n"
     "- Include specific tool calls the agent should use\n";
 
-struct BuiltinSkill {
-    const char* filename;
-    const char* content;
-};
 
-static const BuiltinSkill s_builtins[] = {
+static const SkillInfo s_builtins[] = {
     { "weather",        BUILTIN_WEATHER },
     { "daily-briefing", BUILTIN_DAILY_BRIEFING },
     { "skill-creator",  BUILTIN_SKILL_CREATOR },
@@ -64,13 +60,13 @@ void MimiSkills::installBuiltin(const char* filename, const char* content) {
     String path = String(MIMI_SKILLS_PREFIX) + filename + ".md";
 
     if (_file_system->ExistsFile(path.c_str())) {
-        MIMI_LOGD(TAG, "Skill exists: %s", path.c_str());
+        MIMI_LOGD(TAG, __LINE__, "Skill exists: %s", path.c_str());
         return;
     }
 
     File f = _file_system->OpenFile(path.c_str(), "w");
     if (!f) {
-        MIMI_LOGE(TAG, "Cannot write skill: %s", path.c_str());
+        MIMI_LOGE(TAG, __LINE__, "Cannot write skill: %s", path.c_str());
         return;
     }
 
@@ -79,21 +75,21 @@ void MimiSkills::installBuiltin(const char* filename, const char* content) {
     MIMI_LOGI(TAG, "Installed built-in skill: %s", path.c_str());
 }
 
-void MimiSkills::installSkill(const char* filename, const char* content) {
-    String path = String(MIMI_SKILLS_PREFIX) + filename + ".md";
+void MimiSkills::installSkill(const SkillInfo* info) {
+    String path = String(MIMI_SKILLS_PREFIX) + info->filename + ".md";
 
     if (_file_system->ExistsFile(path.c_str())) {
-        MIMI_LOGD(TAG, "Skill exists: %s", path.c_str());
+        MIMI_LOGD(TAG, __LINE__, "Skill exists: %s", path.c_str());
         return;
     }
 
     File f = _file_system->OpenFile(path.c_str(), "w");
     if (!f) {
-        MIMI_LOGE(TAG, "Cannot write skill: %s", path.c_str());
+        MIMI_LOGE(TAG, __LINE__, "Cannot write skill: %s", path.c_str());
         return;
     }
 
-    f.print(content);
+    f.print(info->content);
     f.close();
     MIMI_LOGI(TAG, "Installed skill: %s", path.c_str());
 }
@@ -113,31 +109,29 @@ bool MimiSkills::begin(FileSystem *file_system) {
 
 size_t MimiSkills::buildSummary(char* buf, size_t size) {
     // Enumerate files matching the skills prefix
-    File root = _file_system->OpenFile("/");
-    if (!root) {
-        MIMI_LOGW(TAG, "Cannot open FILE storage root");
+    File skill_fd = _file_system->OpenFile(MIMI_SKILLS_PREFIX);
+    if (!skill_fd) {
+        MIMI_LOGW(TAG, "Cannot open skills folder.");
         buf[0] = '\0';
         return 0;
     }
 
-    String prefix = String(MIMI_SKILLS_PREFIX);
-    // Remove MIMI_FILE_BASE from prefix for matching SPIFFS filenames
-    // SPIFFS filenames are like "/skills/weather.md"
-    String matchPrefix = prefix;
-    if (matchPrefix.startsWith(MIMI_FILE_BASE)) {
-        matchPrefix = matchPrefix.substring(strlen(MIMI_FILE_BASE));
-    }
-
     size_t off = 0;
-    File entry = root.openNextFile();
+    File entry = skill_fd.openNextFile();
+    if (!entry) {
+        MIMI_LOGE(TAG, __LINE__, "No files in %s.", MIMI_SKILLS_PREFIX);
+        return 0;
+    }
 
     while (entry && off < size - 1) {
         String name = entry.name();
         //  returns names like "/skills/weather.md"
-        if (!name.startsWith(matchPrefix) || !name.endsWith(".md")) {
-            entry = root.openNextFile();
+        if (!name.endsWith(".md")) {
+            entry = skill_fd.openNextFile();
             continue;
         }
+
+        MIMI_LOGD(TAG, __LINE__, "read skill file %s%s", MIMI_SKILLS_PREFIX, entry.name());
 
         // Read first line for title
         String firstLine = entry.readStringUntil('\n');
@@ -155,14 +149,11 @@ size_t MimiSkills::buildSummary(char* buf, size_t size) {
             desc += line;
         }
 
-        // Build full path for read_file reference
-        String fullPath = String(MIMI_FILE_BASE) + name;
-
         off += snprintf(buf + off, size - off,
-            "- **%s**: %s (read with: read_file %s)\n",
-            title.c_str(), desc.c_str(), fullPath.c_str());
+            "- **%s**: %s (read with: read_file %s%s)\n",
+            title.c_str(), desc.c_str(), MIMI_SKILLS_PREFIX, entry.name());
 
-        entry = root.openNextFile();
+        entry = skill_fd.openNextFile();
     }
 
     buf[off] = '\0';

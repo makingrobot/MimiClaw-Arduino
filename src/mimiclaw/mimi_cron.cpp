@@ -172,7 +172,7 @@ bool MimiCron::saveJobs() {
 
     File f = _file_system->OpenFile(MIMI_CRON_FILE, "w");
     if (!f) {
-        MIMI_LOGE(TAG, "Failed to open %s for writing", MIMI_CRON_FILE);
+        MIMI_LOGE(TAG, __LINE__, "Failed to open %s for writing", MIMI_CRON_FILE);
         return false;
     }
 
@@ -266,7 +266,7 @@ bool MimiCron::start() {
 
     BaseType_t ok = xTaskCreate(cronTask, "cron", 4096, this, 4, &_taskHandle);
     if (ok != pdPASS) {
-        MIMI_LOGE(TAG, "Failed to create cron task");
+        MIMI_LOGE(TAG, __LINE__, "Failed to create cron task");
         return false;
     }
 

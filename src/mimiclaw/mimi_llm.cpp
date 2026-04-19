@@ -269,10 +269,10 @@ String MimiLLM::httpDirect(const String& postData) {
     http.setReuse(false);
 
     const char *url = apiUrl();
+    MIMI_LOGD(TAG, __LINE__, "POST url: %s", url);
 
-    MIMI_LOGD(TAG, "POST url: %s", url);
     if (!http.begin(*client, url)) {
-        MIMI_LOGE(TAG, "HTTP begin failed");
+        MIMI_LOGE(TAG, __LINE__, "HTTP begin failed");
         delete client;
         return "";
     }
@@ -281,25 +281,34 @@ String MimiLLM::httpDirect(const String& postData) {
     if (isOpenAI()) {
         String auth = "Bearer " + String(_apiKey);
         http.addHeader("Authorization", auth);
-        MIMI_LOGD(TAG, "Authorization: %s", auth.c_str());
+        //MIMI_LOGD(TAG, __LINE__, "Authorization: %s", auth.c_str());
     } else {
         http.addHeader("x-api-key", _apiKey);
         http.addHeader("anthropic-version", MIMI_LLM_API_VERSION);
     }
 
-    // Serial.println(postData);
-    
-    int httpCode = http.POST(postData);
-    String response;
-    
-    if (httpCode > 0) {
-        response = http.getString();
-        if (httpCode != 200) {
-            MIMI_LOGE(TAG, "API error %d: %.500s", httpCode, response.c_str());
-            response = "";
+    String response = "";
+    uint8_t retry_count = 0;
+    uint8_t retry_times = 3;
+    while (1) 
+    {
+        int httpCode = http.POST(postData);
+        if (httpCode > 0) {
+            response = http.getString();
+            if (httpCode != 200) {
+                MIMI_LOGE(TAG, __LINE__, "API error %d: %.500s", httpCode, response.c_str());
+                response = "";
+            }
+            break; //jump out.
+        } else {
+            MIMI_LOGE(TAG, __LINE__, "HTTP request failed: [%d]%s", httpCode, http.errorToString(httpCode).c_str());
+            if (retry_count++ > retry_times) { 
+                break; //jump out.
+            }
+
+            delay(1000 * retry_count);
+            MIMI_LOGI(TAG, "trying POST again...");
         }
-    } else {
-        MIMI_LOGE(TAG, "HTTP request failed: [%d]%s", httpCode, http.errorToString(httpCode).c_str());
     }
 
     http.end();
@@ -314,7 +323,7 @@ String MimiLLM::httpViaProxy(const String& postData) {
     WiFiClient sock;
     sock.setTimeout(120000);
     if (!sock.connect(_proxy->getHost(), _proxy->getPort())) {
-        MIMI_LOGE(TAG, "Cannot connect to proxy");
+        MIMI_LOGE(TAG, __LINE__, "Cannot connect to proxy");
         return "";
     }
 
@@ -326,7 +335,7 @@ String MimiLLM::httpViaProxy(const String& postData) {
         sock.write(hs, 3);
         uint8_t resp[2];
         if (sock.readBytes(resp, 2) != 2 || resp[0] != 0x05 || resp[1] != 0x00) {
-            MIMI_LOGE(TAG, "SOCKS5 handshake failed");
+            MIMI_LOGE(TAG, __LINE__, "SOCKS5 handshake failed");
             sock.stop();
             return "";
         }
@@ -346,7 +355,7 @@ String MimiLLM::httpViaProxy(const String& postData) {
 
         uint8_t connResp[10];
         if (sock.readBytes(connResp, 10) < 10 || connResp[1] != 0x00) {
-            MIMI_LOGE(TAG, "SOCKS5 connect failed");
+            MIMI_LOGE(TAG, __LINE__, "SOCKS5 connect failed");
             sock.stop();
             return "";
         }
@@ -357,7 +366,7 @@ String MimiLLM::httpViaProxy(const String& postData) {
         sock.print(connectReq);
         String statusLine = sock.readStringUntil('\n');
         if (statusLine.indexOf("200") < 0) {
-            MIMI_LOGE(TAG, "CONNECT rejected: %s", statusLine.c_str());
+            MIMI_LOGE(TAG, __LINE__, "CONNECT rejected: %s", statusLine.c_str());
             sock.stop();
             return "";
         }
@@ -393,7 +402,7 @@ bool MimiLLM::chatWithTools(const char* system_prompt, JsonArray messages,
     memset(resp, 0, sizeof(LlmResponse));
 
     if (_apiKey[0] == '\0') {
-        MIMI_LOGE(TAG, "No API key configured");
+        MIMI_LOGE(TAG, __LINE__, "No API key configured");
         return false;
     }
 
@@ -409,7 +418,7 @@ bool MimiLLM::chatWithTools(const char* system_prompt, JsonArray messages,
     }
 
     if (response.isEmpty()) {
-        MIMI_LOGE(TAG, "Empty response from API");
+        MIMI_LOGE(TAG, __LINE__, "Empty response from API");
         return false;
     }
 
@@ -432,7 +441,7 @@ bool MimiLLM::parseAnthropicResponse(const String& body, LlmResponse* resp) {
     JsonDocument doc(&spiram_allocator);
     DeserializationError err = deserializeJson(doc, body);
     if (err) {
-        MIMI_LOGE(TAG, "JSON parse error: %s", err.c_str());
+        MIMI_LOGE(TAG, __LINE__, "JSON parse error: %s", err.c_str());
         return false;
     }
 
@@ -483,7 +492,7 @@ bool MimiLLM::parseOpenAIResponse(const String& body, LlmResponse* resp) {
     JsonDocument doc(&spiram_allocator);
     DeserializationError err = deserializeJson(doc, body);
     if (err) {
-        MIMI_LOGE(TAG, "JSON parse error: %s", err.c_str());
+        MIMI_LOGE(TAG, __LINE__, "JSON parse error: %s", err.c_str());
         return false;
     }
 

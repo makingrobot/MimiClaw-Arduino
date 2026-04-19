@@ -22,7 +22,7 @@
  */
 class GpioLed : public Led {
  public:
-    GpioLed(gpio_num_t gpio, bool pwm=true, bool output_invert=false);
+    GpioLed(gpio_num_t gpio, bool pwm=false, bool output_invert=false);
     virtual ~GpioLed();
 
     void TurnOn() override;

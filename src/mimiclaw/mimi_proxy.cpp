@@ -53,7 +53,7 @@ void MimiProxy::clear() {
 bool MimiProxy::connectTunnel(WiFiClient& sock, const char* targetHost, int targetPort, int timeout_ms) {
     sock.setTimeout(timeout_ms);
     if (!sock.connect(_host.c_str(), _port)) {
-        MIMI_LOGE(TAG, "TCP connect to proxy %s:%d failed", _host.c_str(), _port);
+        MIMI_LOGE(TAG, __LINE__, "TCP connect to proxy %s:%d failed", _host.c_str(), _port);
         return false;
     }
     MIMI_LOGI(TAG, "Connected to proxy %s:%d", _host.c_str(), _port);
@@ -66,7 +66,7 @@ bool MimiProxy::connectTunnel(WiFiClient& sock, const char* targetHost, int targ
     // Read response line
     String statusLine = sock.readStringUntil('\n');
     if (statusLine.indexOf("200") < 0) {
-        MIMI_LOGE(TAG, "CONNECT rejected: %s", statusLine.c_str());
+        MIMI_LOGE(TAG, __LINE__, "CONNECT rejected: %s", statusLine.c_str());
         return false;
     }
 
@@ -84,7 +84,7 @@ bool MimiProxy::connectTunnel(WiFiClient& sock, const char* targetHost, int targ
 bool MimiProxy::socks5Handshake(WiFiClient& sock, const char* targetHost, int targetPort, int timeout_ms) {
     sock.setTimeout(timeout_ms);
     if (!sock.connect(_host.c_str(), _port)) {
-        MIMI_LOGE(TAG, "TCP connect to SOCKS5 proxy %s:%d failed", _host.c_str(), _port);
+        MIMI_LOGE(TAG, __LINE__, "TCP connect to SOCKS5 proxy %s:%d failed", _host.c_str(), _port);
         return false;
     }
     MIMI_LOGI(TAG, "Connected to SOCKS5 proxy %s:%d", _host.c_str(), _port);
@@ -95,7 +95,7 @@ bool MimiProxy::socks5Handshake(WiFiClient& sock, const char* targetHost, int ta
 
     uint8_t resp[2];
     if (sock.readBytes(resp, 2) != 2 || resp[0] != 0x05 || resp[1] != 0x00) {
-        MIMI_LOGE(TAG, "SOCKS5 handshake failed");
+        MIMI_LOGE(TAG, __LINE__, "SOCKS5 handshake failed");
         return false;
     }
 
@@ -120,7 +120,7 @@ bool MimiProxy::socks5Handshake(WiFiClient& sock, const char* targetHost, int ta
     uint8_t connResp[256];
     int n = sock.readBytes(connResp, 10);
     if (n < 10 || connResp[0] != 0x05 || connResp[1] != 0x00) {
-        MIMI_LOGE(TAG, "SOCKS5 connect failed: status=%d", n >= 2 ? connResp[1] : -1);
+        MIMI_LOGE(TAG, __LINE__, "SOCKS5 connect failed: status=%d", n >= 2 ? connResp[1] : -1);
         return false;
     }
 
@@ -130,7 +130,7 @@ bool MimiProxy::socks5Handshake(WiFiClient& sock, const char* targetHost, int ta
 
 WiFiClientSecure* MimiProxy::openTLS(const char* host, int port, int timeout_ms) {
     if (!isEnabled()) {
-        MIMI_LOGE(TAG, "proxy_conn_open called but no proxy configured");
+        MIMI_LOGE(TAG, __LINE__, "proxy_conn_open called but no proxy configured");
         return nullptr;
     }
 

@@ -7,6 +7,11 @@
 #include <Arduino.h>
 #include "src/framework/file/file_system.h"
 
+struct SkillInfo {
+    const char* filename;
+    const char* content;
+};
+
 class MimiSkills {
 public:
     MimiSkills();
@@ -19,7 +24,7 @@ public:
      * @return      Number of bytes written
      */
     size_t buildSummary(char* buf, size_t size);
-    void installSkill(const char* filename, const char* content);
+    void installSkill(const SkillInfo* info);
 
 private:
     void installBuiltin(const char* filename, const char* content);

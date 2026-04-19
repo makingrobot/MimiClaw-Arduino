@@ -136,7 +136,7 @@
 
 // ── FILE / Storage ───────────────────────────────────────────
 #ifndef MIMI_FILE_BASE
-#define MIMI_FILE_BASE             "/spiffs"
+#define MIMI_FILE_BASE             ""
 #endif
 #ifndef MIMI_FILE_CONFIG_DIR
 #define MIMI_FILE_CONFIG_DIR       MIMI_FILE_BASE "/config"
@@ -255,13 +255,13 @@
 #if CONFIG_USE_ESP_LOG==1
 #define MIMI_LOGI(tag, fmt, ...) log_i("[%s] " fmt, tag, ##__VA_ARGS__)
 #define MIMI_LOGW(tag, fmt, ...) log_w("[%s] " fmt, tag, ##__VA_ARGS__)
-#define MIMI_LOGE(tag, fmt, ...) log_e("[%s] " fmt, tag, ##__VA_ARGS__)
-#define MIMI_LOGD(tag, fmt, ...) log_d("[%s] " fmt, tag, ##__VA_ARGS__)
+#define MIMI_LOGE(tag, line, fmt, ...) log_e("[%s] " fmt, tag, ##__VA_ARGS__)
+#define MIMI_LOGD(tag, line, fmt, ...) log_d("[%s] " fmt, tag, ##__VA_ARGS__)
 #else
 #define MIMI_LOGI(tag, fmt, ...) Log::Info(tag, fmt, ##__VA_ARGS__)
 #define MIMI_LOGW(tag, fmt, ...) Log::Warn(tag,  fmt, ##__VA_ARGS__)
-#define MIMI_LOGE(tag, fmt, ...) Log::Error(tag, fmt, ##__VA_ARGS__)
-#define MIMI_LOGD(tag, fmt, ...) Log::Debug(tag, fmt, ##__VA_ARGS__)
+#define MIMI_LOGE(tag, line, fmt, ...) Log::Error(tag, line, fmt, ##__VA_ARGS__)
+#define MIMI_LOGD(tag, line, fmt, ...) Log::Debug(tag, line, fmt, ##__VA_ARGS__)
 #endif
 
 #endif // MIMI_CONFIG_H

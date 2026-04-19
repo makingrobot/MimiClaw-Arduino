@@ -66,9 +66,6 @@ public:
     bool isWiFiConnected();
     const char* getIP();
 
-    // 注册工具
-    void registerTool(const MimiTool* tool);
-    
     // 推送消息
     bool pushMessage(const MimiMsg* msg);
 
@@ -118,7 +115,10 @@ private:
     // Outbound dispatch task
     static void outboundTask(void* arg);
     
-    void addTools();
+    // 注册工具
+    void registerTools();
+    // 安装技能
+    void installSkills();
 
     TaskHandle_t _outboundTaskHandle;
 };

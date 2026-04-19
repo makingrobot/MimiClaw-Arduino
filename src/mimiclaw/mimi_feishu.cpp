@@ -70,9 +70,14 @@ bool MimiFeishu::dedupCheckAndRecord(const char *message_id)
 
 int MimiFeishu::sendWsFrame(const ws_frame_t *f, const uint8_t *payload, size_t payload_len, int timeout_ms)
 {
-    MIMI_LOGD(TAG, "call sendWsFrame...");
+    MIMI_LOGD(TAG, __LINE__, "call sendWsFrame...");
 
-    uint8_t out[2048];
+    uint8_t *out = (uint8_t *)malloc(2048);
+    if (!out) {
+        MIMI_LOGE(TAG, __LINE__, "Out of memory.\n");
+        return -1;
+    }
+
     size_t pos = 0;
     if (!pb_write_tag(out, sizeof(out), &pos, 1, 0) || !pb_write_varint(out, sizeof(out), &pos, f->seq_id)) return -1;
     if (!pb_write_tag(out, sizeof(out), &pos, 2, 0) || !pb_write_varint(out, sizeof(out), &pos, f->log_id)) return -1;
@@ -88,7 +93,9 @@ int MimiFeishu::sendWsFrame(const ws_frame_t *f, const uint8_t *payload, size_t 
     if (payload && payload_len > 0) {
         if (!pb_write_bytes(out, sizeof(out), &pos, 8, payload, payload_len)) return -1;
     }
-    return esp_websocket_client_send_bin(_ws_client, (const char *)out, pos, timeout_ms);
+    int ret = esp_websocket_client_send_bin(_ws_client, (const char *)out, pos, timeout_ms);
+    free(out);
+    return ret;
 }
 
 /* ── Get / refresh tenant access token ─────────────────────── */
@@ -114,20 +121,20 @@ bool MimiFeishu::getTenantToken()
 
     String result = httpCall(FEISHU_AUTH_URL, "POST", json_str.c_str(), 10000);
     if (result.isEmpty()) {
-        MIMI_LOGE(TAG, "No content response.");
+        MIMI_LOGE(TAG, __LINE__, "No content response.");
         return false;
     }
 
     // 响应处理
     JsonDocument response(&spiram_allocator);
     if (deserializeJson(response, result)) {
-        MIMI_LOGE(TAG, "Failed to parse token response"); 
+        MIMI_LOGE(TAG, __LINE__, "Failed to parse token response"); 
         return false; /*ESP_FAIL;*/
     }
 
     int code = response["code"].as<int>();
     if ( code != 0) {
-        MIMI_LOGE(TAG, "Token request failed: code=%d", code);
+        MIMI_LOGE(TAG, __LINE__, "Token request failed: code=%d", code);
         return false; //ESP_FAIL;
     }
 
@@ -158,7 +165,7 @@ String MimiFeishu::apiCall(const char *url, const char *method, const char *post
     http.setConnectTimeout(timeout);
 
     if (!http.begin(*client, url)) {
-        MIMI_LOGE(TAG, "httpclient begin failure.");
+        MIMI_LOGE(TAG, __LINE__, "httpclient begin failure.");
         delete client;
         return "";
     }
@@ -166,25 +173,34 @@ String MimiFeishu::apiCall(const char *url, const char *method, const char *post
     String auth_header = "Bearer " + _tenant_token;
     http.addHeader("Authorization", auth_header);
 
-    MIMI_LOGD(TAG, "%s url: %s", method, url);
-    MIMI_LOGD(TAG, "Authheader: %s", auth_header.c_str());
-    if (post_data) {
-        MIMI_LOGD(TAG, "Postdata: %s", post_data);
-    }
-
-    int httpCode;
-    if (strcmp(method, "POST")==0) {
-        http.addHeader("Content-Type", "application/json; charset=utf-8");
-        httpCode = http.POST(post_data);
-    } else {
-        httpCode = http.GET();
-    }
+    MIMI_LOGD(TAG, __LINE__, "%s url: %s", method, url);
+    //MIMI_LOGD(TAG, "Authheader: %s", auth_header.c_str());
 
     String result = "";
-    if (httpCode > 0) {
-        result = http.getString();
-    } else {
-        MIMI_LOGE(TAG, "HTTP error: %d", httpCode);
+    uint8_t retry_count = 0;
+    uint8_t retry_times = 3;
+    while (1) 
+    {
+        int httpCode;
+        if (strcmp(method, "POST")==0) {
+            http.addHeader("Content-Type", "application/json; charset=utf-8");
+            httpCode = http.POST(post_data);
+        } else {
+            httpCode = http.GET();
+        }
+
+        if (httpCode > 0) {
+            result = http.getString();
+            break;  // jump out.
+        } else {
+            MIMI_LOGE(TAG, __LINE__, "HTTP error: %d", httpCode);
+            if (retry_count++ > retry_times) { 
+                break; //jump out.
+            }
+
+            delay(1000 * retry_count);
+            MIMI_LOGI(TAG, "trying %s again...", method);
+        }
     }
 
     http.end();
@@ -209,20 +225,33 @@ String MimiFeishu::httpCall(const char *url, const char *method, const char *pos
 
     http.addHeader("locale", "zh");
 
-    MIMI_LOGD(TAG, "%s url: %s", method, url);
-    int httpCode;
-    if (strcmp(method, "POST")==0) {
-        http.addHeader("Content-Type", "application/json; charset=utf-8");
-        httpCode = http.POST(post_data);
-    } else {
-        httpCode = http.GET();
-    }
+    MIMI_LOGD(TAG, __LINE__, "%s url: %s", method, url);
 
     String result = "";
-    if (httpCode > 0) {
-        result = http.getString();
-    } else {
-        MIMI_LOGE(TAG, "HTTP error: %d", httpCode);
+    uint8_t retry_count = 0;
+    uint8_t retry_times = 3;
+    while (1) 
+    {
+        int httpCode;
+        if (strcmp(method, "POST")==0) {
+            http.addHeader("Content-Type", "application/json; charset=utf-8");
+            httpCode = http.POST(post_data);
+        } else {
+            httpCode = http.GET();
+        }
+
+        if (httpCode > 0) {
+            result = http.getString();
+            break; // jump out.
+        } else {
+            MIMI_LOGE(TAG, __LINE__, "HTTP error: %d", httpCode);
+            if (retry_count++ > retry_times) { 
+                break; //jump out.
+            }
+
+            delay(1000 * retry_count);
+            MIMI_LOGI(TAG, "trying %s again...", method);
+        }
     }
 
     http.end();
@@ -282,7 +311,7 @@ bool MimiFeishu::pullWsConfig()
     JsonObject ccfg = response["data"]["ClientConfig"];
 
     if (code != 0 || !url) {
-        MIMI_LOGE(TAG, "Invalid WS config response");
+        MIMI_LOGE(TAG, __LINE__, "Invalid WS config response");
         return false; //ESP_FAIL;
     }
 
@@ -307,7 +336,7 @@ bool MimiFeishu::pullWsConfig()
  */
 void MimiFeishu::handleWsEvent(const char *json, size_t len)
 {
-    MIMI_LOGD(TAG, "step2: handle websocket event...");
+    MIMI_LOGD(TAG, __LINE__, "step2: handle websocket event...");
 
     String json_str = String(json, len);
     JsonDocument doc(&spiram_allocator);
@@ -333,7 +362,7 @@ void MimiFeishu::handleWsEvent(const char *json, size_t len)
  */
 void MimiFeishu::handleWsFrame(const uint8_t *buf, size_t len)
 {
-    MIMI_LOGD(TAG, "step1: handle websocket frame...");
+    MIMI_LOGD(TAG, __LINE__, "step1: handle websocket frame...");
 
     ws_frame_t frame;
     if (!pb_parse_frame(buf, len, &frame)) {
@@ -362,7 +391,7 @@ void MimiFeishu::handleWsFrame(const uint8_t *buf, size_t len)
     handleWsEvent((const char *)frame.payload, frame.payload_len);
 
     // 发送应答
-    char ack[32];
+    char ack[32] = {0};
     int ack_len = snprintf(ack, sizeof(ack), "{\"code\":%d}", code);
     ws_frame_t resp = frame;
     sendWsFrame(&resp, (const uint8_t *)ack, (size_t)ack_len, 1000);
@@ -373,7 +402,7 @@ void MimiFeishu::handleWsFrame(const uint8_t *buf, size_t len)
  */
 static void feishu_ws_event_handler(void *arg, esp_event_base_t base, int32_t event_id, void *event_data)
 {
-    //MIMI_LOGD(TAG, "step0: websocket event callback...");
+    //MIMI_LOGD(TAG, __LINE__, "step0: websocket event callback...");
 
     (void)base;
     MimiFeishu *self = (MimiFeishu*)arg;
@@ -434,11 +463,11 @@ static void feishu_ws_event_handler(void *arg, esp_event_base_t base, int32_t ev
  */
 void MimiFeishu::handleMessage(const JsonObject& event_obj)
 {
-    MIMI_LOGD(TAG, "step3: handle message...");
+    MIMI_LOGD(TAG, __LINE__, "step3: handle message...");
 
     String str;
     serializeJson(event_obj, str);
-    MIMI_LOGI(TAG, "Message: %s", str.c_str());
+    //MIMI_LOGD(TAG, __LINE__, "Message: %s", str.c_str());
 
     const char *message_id = event_obj["message"]["message_id"] | (const char *)nullptr;
     const char *chat_type  = event_obj["message"]["chat_type"] | (const char *)"p2p";
@@ -448,7 +477,7 @@ void MimiFeishu::handleMessage(const JsonObject& event_obj)
     
     /* Deduplication */
     if (message_id && dedupCheckAndRecord(message_id)) {
-        MIMI_LOGD(TAG, "Duplicate message %s, skipping", message_id);
+        MIMI_LOGD(TAG, __LINE__, "Duplicate message %s, skipping", message_id);
         return;
     }
 
@@ -649,7 +678,7 @@ bool MimiFeishu::sendMessage(const char *chat_id, const char *text)
 
     char url[256] = {0};
     snprintf(url, sizeof(url), "%s?receive_id_type=%s", FEISHU_SEND_MSG_URL, id_type);
-    MIMI_LOGI(TAG, "Send message to url: %s", url);
+    MIMI_LOGI(TAG, "POST url: %s", url);
 
     size_t text_len = strlen(text);
     size_t offset = 0;
@@ -663,7 +692,7 @@ bool MimiFeishu::sendMessage(const char *chat_id, const char *text)
 
         char *segment = (char *)malloc(chunk + 1);
         if (!segment) {
-            MIMI_LOGE(TAG, "out of memory.");
+            MIMI_LOGE(TAG, __LINE__, "out of memory.");
             return false;
         }
         memcpy(segment, text + offset, chunk);
@@ -708,7 +737,7 @@ bool MimiFeishu::sendMessage(const char *chat_id, const char *text)
                     }
                 }
             } else {
-                MIMI_LOGE(TAG, "Failed to send message chunk");
+                MIMI_LOGE(TAG, __LINE__, "Failed to send message chunk");
                 all_ok = 0;
             }
         }
@@ -726,7 +755,7 @@ bool MimiFeishu::replyMessage(const char *message_id, const char *text)
         return false; //ESP_ERR_INVALID_STATE;
     }
 
-    char url[256];
+    char url[256] = {0};
     snprintf(url, sizeof(url), FEISHU_REPLY_MSG_URL, message_id);
 
     JsonDocument content_obj(&spiram_allocator);
@@ -734,7 +763,7 @@ bool MimiFeishu::replyMessage(const char *message_id, const char *text)
     String content_str;
     serializeJson(content_obj, content_str);
     if (content_str.isEmpty()) {
-        MIMI_LOGE(TAG, "request content is empty.");
+        MIMI_LOGE(TAG, __LINE__, "request content is empty.");
         return false; //ESP_ERR_NO_MEM;
     }
 
@@ -745,19 +774,19 @@ bool MimiFeishu::replyMessage(const char *message_id, const char *text)
     String json_str;
     serializeJson(body_obj, json_str);
     if (json_str.isEmpty()) {
-        MIMI_LOGE(TAG, "Build request json error.");
+        MIMI_LOGE(TAG, __LINE__, "Build request json error.");
         return false; //ESP_ERR_NO_MEM;
     }
 
     String resp = apiCall(url, "POST", json_str.c_str());
     if (resp.isEmpty()) {
-        MIMI_LOGE(TAG, "No content response.");
+        MIMI_LOGE(TAG, __LINE__, "No content response.");
         return false;
     }
 
     JsonDocument response(&spiram_allocator);
     if (deserializeJson(response, resp)) {
-        MIMI_LOGE(TAG, "Parse response json error.");
+        MIMI_LOGE(TAG, __LINE__, "Parse response json error.");
         return false;
     }
 

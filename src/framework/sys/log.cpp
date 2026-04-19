@@ -7,77 +7,42 @@
 #include "log.h"
 
 #include "config.h"
-#include <string>
-#include <Arduino.h>
 
 Log::Level Log::level = (Log::Level)CONFIG_LOG_LEVEL;
 
-const int LOG_BUFFER_LEN = 256;
+void Log::formatTime(char *buffer, uint8_t buf_size) {
+        uint8_t day;
+        uint8_t hour;
+        uint8_t minute;
+        uint8_t seconds;
+        uint16_t msec;
 
-void Log::Info(const char* tag, const char* format, ...) {
-    if (Log::level >= Log::INFO)
-    {
-        va_list args;
-        va_start(args, format);
-        char buffer[LOG_BUFFER_LEN] = { 0 };
-        vsnprintf(buffer, LOG_BUFFER_LEN-1, format, args);
-        va_end(args);
+        uint32_t current = millis();
+        uint32_t total_sec = current / 1000;
+        msec = current - total_sec * 1000;
 
-#if CONFIG_USE_ESP_LOG==1
-        log_i("%s %s", tag, buffer);
-#else
-        Serial.printf("I %d [%s] %s\n", millis(), tag, buffer);
-#endif
+        // 天
+        if (total_sec > 86400) {
+            uint32_t all_day = total_sec / 86400;
+            total_sec = total_sec - day * 86400;
+            if (all_day > 100) {
+                day = (uint8_t)(all_day % 100);
+            }
+        }
+
+        // 小时
+        if (total_sec > 3600) {
+            hour = total_sec / 3600;
+            total_sec = total_sec - hour * 3600;
+        }
+
+        // 分钟、秒
+        if (total_sec > 60) {
+            minute = total_sec / 60;
+            seconds = total_sec - minute * 60;
+        } else {
+            seconds = total_sec;
+        }
+
+        snprintf(buffer, buf_size, "%02u:%02u:%02u:%02u.%03u", day, hour, minute, seconds, msec);
     }
-}
-
-void Log::Warn(const char* tag, const char* format, ...) {
-    if (Log::level >= Log::WARN)
-    {
-        va_list args;
-        va_start(args, format);
-        char buffer[LOG_BUFFER_LEN] = { 0 };
-        vsnprintf(buffer, LOG_BUFFER_LEN-1, format, args);
-        va_end(args);
-
-#if CONFIG_USE_ESP_LOG==1
-        log_w("%s %s", tag, buffer);
-#else
-        Serial.printf("W %d [%s] %s\n", millis(), tag, buffer);
-#endif
-    }
-}
-
-void Log::Debug(const char* tag, const char* format, ...) {
-    if (Log::level >= Log::DEBUG)
-    {
-        va_list args;
-        va_start(args, format);
-        char buffer[LOG_BUFFER_LEN] = { 0 };
-        vsnprintf(buffer, LOG_BUFFER_LEN-1, format, args);
-        va_end(args);
-
-#if CONFIG_USE_ESP_LOG==1
-        log_d("%s %s", tag, buffer);
-#else
-        Serial.printf("D %d [%s] %s\n", millis(), tag, buffer);
-#endif
-    }
-}
-
-void Log::Error(const char* tag, const char* format, ...) {
-    if (Log::level >= Log::ERROR)
-    {
-        va_list args;
-        va_start(args, format);
-        char buffer[LOG_BUFFER_LEN] = { 0 };
-        vsnprintf(buffer, LOG_BUFFER_LEN-1, format, args);
-        va_end(args);
-
-#if CONFIG_USE_ESP_LOG==1
-        log_e("%s %s", tag, buffer);
-#else
-        Serial.printf("E %d [%s] %s\n", millis(), tag, buffer);
-#endif
-    }
-}

@@ -142,7 +142,7 @@ String MimiTelegram::apiCall(const char* method, const char* postData) {
     if (httpCode > 0) {
         result = http.getString();
     } else {
-        MIMI_LOGE(TAG, "HTTP error: %d", httpCode);
+        MIMI_LOGE(TAG, __LINE__, "HTTP error: %d", httpCode);
     }
 
     http.end();
@@ -265,7 +265,7 @@ bool MimiTelegram::sendMessage(const char* chat_id, const char* text) {
         }
 
         if (!ok) {
-            MIMI_LOGE(TAG, "Send failed for %s", chat_id);
+            MIMI_LOGE(TAG, __LINE__, "Send failed for %s", chat_id);
             allOk = false;
         } else {
             MIMI_LOGI(TAG, "Send success to %s (%d bytes)", chat_id, (int)chunk);
