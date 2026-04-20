@@ -32,7 +32,7 @@ public:
     bool RemoveDir(const char *path);
 
     bool ExistsFile(const char *path); 
-    File OpenFile(const char *path, const char *mode = FILE_READ, const bool create = false);
+    File OpenFile(const char *path, const char *mode = FILE_READ);
     bool WriteFile(const char *path, const char *content);
     bool AppendFile(const char *path, const char *content);
     bool RenameFile(const char *path, const char *new_path);

@@ -36,7 +36,8 @@ bool FileSystem::ExistsFile(const char *path) {
     return fs_.exists(path);
 }
 
-File FileSystem::OpenFile(const char *path,  const char *mode, const bool create) {
+File FileSystem::OpenFile(const char *path,  const char *mode) {
+    bool create = (strcmp(mode, "r") != 0);
     return fs_.open(path, mode, create);
 }
 

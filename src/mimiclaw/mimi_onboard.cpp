@@ -61,11 +61,11 @@ bool MimiOnboard::start(bool admin) {
             HTTPRaw &raw = _webserver->raw();
             if (raw.status == RAW_START) {
                 _saved_data = "";
-                MIMI_LOGD(TAG, __FILE__, "Upload: START");
+                MIMI_LOGD(TAG, __LINE__, "Upload: START");
             } else if (raw.status == RAW_WRITE) {
                 _saved_data = _saved_data + String(reinterpret_cast<char*>(raw.buf), raw.currentSize);
             } else if (raw.status == RAW_END) {
-                MIMI_LOGD(TAG, __FILE__, "Upload: END, Size: %d", raw.totalSize);
+                MIMI_LOGD(TAG, __LINE__, "Upload: END, Size: %d", raw.totalSize);
             }
         });
 

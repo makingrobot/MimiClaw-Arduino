@@ -32,9 +32,9 @@ MimiWebsearch::MimiWebsearch() {
 void MimiWebsearch::init() {
     Preferences prefs;
     prefs.begin(MIMI_PREF_SEARCH, true);
-    String _provider = prefs.getString(MIMI_PREF_SEARCH_PROVIDER, MIMI_SEARCH_PROVIDER);
-    String _brave_key = prefs.getString(MIMI_PREF_SEARCH_BRAVEKEY, MIMI_BRAVE_KEY);
-    String _tavily_key = prefs.getString(MIMI_PREF_SEARCH_TAVILYKEY, MIMI_TAVILY_KEY);
+    _provider = prefs.getString(MIMI_PREF_SEARCH_PROVIDER, MIMI_SEARCH_PROVIDER);
+    _brave_key = prefs.getString(MIMI_PREF_SEARCH_BRAVEKEY, MIMI_BRAVE_KEY);
+    _tavily_key = prefs.getString(MIMI_PREF_SEARCH_TAVILYKEY, MIMI_TAVILY_KEY);
     prefs.end();
 }
 
@@ -86,13 +86,13 @@ static size_t url_encode(const char* src, char* dst, size_t dst_size) {
 }
 
 bool MimiWebsearch::search(const char* query, char* output, size_t output_size) {
-    
     if (strcmp(_provider.c_str(), "brave")==0) {
         if (_brave_key.isEmpty()) {
             MIMI_LOGE(TAG, __LINE__, "Brave key not config.");
             return false;
         }
 
+        MIMI_LOGI(TAG, "Use Brave search.");
         return braveSearch(query, output, output_size);
 
     } else if (strcmp(_provider.c_str(), "tavily") == 0) {
@@ -101,6 +101,7 @@ bool MimiWebsearch::search(const char* query, char* output, size_t output_size) 
             return false;
         }
 
+        MIMI_LOGI(TAG, "Use Tavily search.");
         return tavilySearch(query, output, output_size);
     }
 
@@ -109,7 +110,7 @@ bool MimiWebsearch::search(const char* query, char* output, size_t output_size) 
 }
 
 bool MimiWebsearch::braveSearch(const char* query, char* output, size_t output_size) {
-    char encoded[256];
+    char encoded[256] = {0};
     url_encode(query, encoded, sizeof(encoded));
 
     String url = "https://api.search.brave.com/res/v1/web/search?q=" + String(encoded) + "&count=5";
@@ -122,15 +123,17 @@ bool MimiWebsearch::braveSearch(const char* query, char* output, size_t output_s
     if (!http.begin(*client, url)) {
         delete client;
         snprintf(output, output_size, "Error: HTTP begin failed");
+        MIMI_LOGE(TAG, __LINE__, "Error: HTTP begin failed");
         return false;
     }
 
     http.addHeader("Accept", "application/json");
-    http.addHeader("X-Subscription-Token", _brave_key.c_str());
+    http.addHeader("X-Subscription-Token", _brave_key);
 
     int httpCode = http.GET();
     if (httpCode != 200) {
         snprintf(output, output_size, "Error: Search API returned %d", httpCode);
+        MIMI_LOGE(TAG, __LINE__, "Error: Search API returned %d", httpCode);
         http.end();
         delete client;
         return false;
@@ -144,12 +147,14 @@ bool MimiWebsearch::braveSearch(const char* query, char* output, size_t output_s
     JsonDocument respDoc(&spiram_allocator);
     if (deserializeJson(respDoc, body)) {
         snprintf(output, output_size, "Error: Failed to parse search results");
+        MIMI_LOGE(TAG, __LINE__, "Error: Failed to parse search results");
         return false;
     }
 
     JsonArray results = respDoc["web"]["results"].as<JsonArray>();
     if (results.isNull() || results.size() == 0) {
-        snprintf(output, output_size, "No web results found.");
+        snprintf(output, output_size, "Brave search no results.");
+        MIMI_LOGI(TAG, "Brave search no results.");
         return true;
     }
 
@@ -170,8 +175,33 @@ bool MimiWebsearch::braveSearch(const char* query, char* output, size_t output_s
     return true;
 }
 
+// curl --request POST \
+//   --url https://api.tavily.com/search \
+//   --header 'Authorization: Bearer <token>' \
+//   --header 'Content-Type: application/json' \
+//   --data '
+// {
+//   "query": "who is Leo Messi?",
+//   "auto_parameters": false,
+//   "topic": "general",
+//   "search_depth": "basic",
+//   "chunks_per_source": 3,
+//   "max_results": 1,
+//   "time_range": null,
+//   "start_date": "2025-02-09",
+//   "end_date": "2025-12-29",
+//   "include_answer": false,
+//   "include_raw_content": false,
+//   "include_images": false,
+//   "include_image_descriptions": false,
+//   "include_favicon": false,
+//   "include_domains": [],
+//   "exclude_domains": [],
+//   "country": null,
+//   "include_usage": false
+// }
 bool MimiWebsearch::tavilySearch(const char* query, char* output, size_t output_size) {
-    char encoded[256];
+    char encoded[256] = {0};
     url_encode(query, encoded, sizeof(encoded));
 
     String url = "https://api.tavily.com/search";
@@ -185,21 +215,18 @@ bool MimiWebsearch::tavilySearch(const char* query, char* output, size_t output_
     if (!http.begin(*client, url)) {
         delete client;
         snprintf(output, output_size, "Error: HTTP begin failed");
+        MIMI_LOGE(TAG, __LINE__, output);
         return false;
     }
 
-    http.addHeader("Accept", "application/json");
     http.addHeader("Content-Type", "application/json");
-    
-    char auth[192];
-    snprintf(auth, sizeof(auth), "Bearer %s", _tavily_key.c_str());
-    http.addHeader("Authorization", auth);
+    http.addHeader("Authorization", "Bearer " + _tavily_key);
+    MIMI_LOGD(TAG, __LINE__, "Authorization: Bearer %s", _tavily_key.c_str());
 
     JsonDocument payloadDoc(&spiram_allocator);
     payloadDoc["query"] = encoded;
     payloadDoc["max_results"] = SEARCH_RESULT_COUNT;
-    payloadDoc["include_answer"] = false;
-    payloadDoc["search_depth"] = "baisc";
+    payloadDoc["search_depth"] = "advanced";
 
     String payloadStr;
     serializeJson(payloadDoc, payloadStr);
@@ -207,6 +234,7 @@ bool MimiWebsearch::tavilySearch(const char* query, char* output, size_t output_
     int httpCode = http.POST(payloadStr);
     if (httpCode != 200) {
         snprintf(output, output_size, "Error: Tavily API returned %d", httpCode);
+        MIMI_LOGE(TAG, __LINE__, "Error: Tavily API returned %d", httpCode);
         http.end();
         delete client;
         return false;
@@ -220,12 +248,14 @@ bool MimiWebsearch::tavilySearch(const char* query, char* output, size_t output_
     JsonDocument respDoc(&spiram_allocator);
     if (deserializeJson(respDoc, body)) {
         snprintf(output, output_size, "Error: Failed to parse search results");
+        MIMI_LOGE(TAG, __LINE__, "Error: Failed to parse search results");
         return false;
     }
 
-    JsonArray results = respDoc["web"]["results"].as<JsonArray>();
+    JsonArray results = respDoc["results"].as<JsonArray>();
     if (results.isNull() || results.size() == 0) {
-        snprintf(output, output_size, "No web results found.");
+        snprintf(output, output_size, "Tavily search no results found.");
+        MIMI_LOGI(TAG, "Tavily search no results found.");
         return true;
     }
 
@@ -251,12 +281,14 @@ bool tool_web_search_execute(const char* input_json, char* output, size_t output
     JsonDocument doc(&spiram_allocator);
     if (deserializeJson(doc, input_json)) {
         snprintf(output, output_size, "Error: Invalid input JSON");
+        MIMI_LOGE(TAG, __LINE__, "Error: Invalid input JSON");
         return false;
     }
 
     const char* query = doc["query"] | "";
     if (!query[0]) {
         snprintf(output, output_size, "Error: Missing 'query' field");
+        MIMI_LOGE(TAG, __LINE__, "Error: Missing 'query' field");
         return false;
     }
 
