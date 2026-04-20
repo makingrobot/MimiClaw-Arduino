@@ -1,5 +1,7 @@
 /*
- * MimiClaw - Serial Cli Console
+ * MimiClaw-Arduino - Serial Cli Console
+ *
+ * Author: Billy Zhang（billy_zh@126.com）
  */
 #ifndef MIMI_SERIAL_CLI_H
 #define MIMI_SERIAL_CLI_H

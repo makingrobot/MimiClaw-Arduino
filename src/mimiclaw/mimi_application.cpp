@@ -4,7 +4,7 @@
 #include "src/framework/file/file_system.h"
 #include "ArduinoJson.h"
 #include "arduino_json_psram.h"
-#include "src/boards/esp32-s3-devkit/esp32_s3_board.h"
+#include "mimi_board.h"
 
 #define TAG "mimiapp"
 
@@ -181,11 +181,22 @@ bool MimiApplication::Start() {
     // Connect WiFi
     if (!_wifi.start()) {
         MIMI_LOGW(TAG, "WiFi start failed");
+        // 启动配置
+        _onboard.start();  //阻塞
         return false;
     }
 
-    if (!_wifi.waitConnected(30000)) {
+     // 等待连接上
+    if (!_wifi.waitConnected()) { //连接不上
         MIMI_LOGW(TAG, "WiFi connection timeout");
+        
+        // 启动配置
+        _onboard.start();  //阻塞
+        return false;
+    }
+
+    if (!_onboard.start(true)) {
+        MIMI_LOGW(TAG, "Onboard start failed");
         return false;
     }
 
@@ -293,6 +304,10 @@ bool MimiApplication::heartbeatTrigger() {
     return _heartbeat.trigger();
 }
 
+void MimiApplication::registerTool(const MimiTool* tool) {
+    _tools.registerTool(tool);
+}
+
 void MimiApplication::registerTools() {
     std::vector<const MimiTool*>& cron_tools = _cron.tools();
     for (const MimiTool *tool : cron_tools) {
@@ -304,14 +319,14 @@ void MimiApplication::registerTools() {
         _tools.registerTool(tool);
     }
 
-    Esp32S3Board *board = (Esp32S3Board *)(&Board::GetInstance());
+    MimiBoard *board = (MimiBoard *)(&Board::GetInstance());
     for (const MimiTool *tool : board->tools()) {
         _tools.registerTool(tool);
     }
 }
 
 void MimiApplication::installSkills() {
-    Esp32S3Board *board = (Esp32S3Board *)(&Board::GetInstance());
+    MimiBoard *board = (MimiBoard *)(&Board::GetInstance());
     for (const SkillInfo *info : board->skills()) {
         _skills.installSkill(info);
     }

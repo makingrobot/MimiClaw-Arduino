@@ -1,5 +1,7 @@
 /*
- * MimiClaw - Skill Loader
+ * MimiClaw-Arduino - Skill Loader
+ *
+ * Author: Billy Zhang（billy_zh@126.com）
  */
 #ifndef MIMI_SKILLS_H
 #define MIMI_SKILLS_H

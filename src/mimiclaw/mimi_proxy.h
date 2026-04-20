@@ -1,5 +1,7 @@
 /*
- * MimiClaw - HTTP/SOCKS5 Proxy
+ * MimiClaw-Arduino - HTTP/SOCKS5 Proxy
+ *
+ * Author: Billy Zhang（billy_zh@126.com）
  */
 #ifndef MIMI_PROXY_H
 #define MIMI_PROXY_H

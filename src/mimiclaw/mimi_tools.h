@@ -1,5 +1,7 @@
 /*
- * MimiClaw - Tool Registry
+ * MimiClaw-Arduino - Tool Registry
+ *
+ * Author: Billy Zhang（billy_zh@126.com）
  */
 #ifndef MIMI_TOOLS_H
 #define MIMI_TOOLS_H

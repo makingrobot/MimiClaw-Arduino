@@ -1,5 +1,7 @@
 /*
- * MimiClaw - Cron Scheduler
+ * MimiClaw-Arduino - Cron Scheduler
+ *
+ * Author: Billy Zhang（billy_zh@126.com）
  */
 #ifndef MIMI_CRON_H
 #define MIMI_CRON_H

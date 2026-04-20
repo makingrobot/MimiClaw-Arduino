@@ -1,5 +1,7 @@
 /*
- * MimiClaw - Session Manager (JSONL files on storage)
+ * MimiClaw-Arduino - Session Manager (JSONL files on storage)
+ *
+ * Author: Billy Zhang（billy_zh@126.com）
  */
 #ifndef MIMI_SESSION_H
 #define MIMI_SESSION_H

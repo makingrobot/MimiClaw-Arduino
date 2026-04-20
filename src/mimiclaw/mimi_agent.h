@@ -1,5 +1,7 @@
 /*
- * MimiClaw - ReAct Agent Loop
+ * MimiClaw-Arduino - ReAct Agent Loop
+ *
+ * Author: Billy Zhang（billy_zh@126.com）
  */
 #ifndef MIMI_AGENT_H
 #define MIMI_AGENT_H

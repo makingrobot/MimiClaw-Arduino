@@ -1,5 +1,7 @@
 /*
- * MimiClaw - WebSocket Server
+ * MimiClaw-Arduino - WebSocket Server
+ *
+ * Author: Billy Zhang（billy_zh@126.com）
  */
 #ifndef MIMI_WS_H
 #define MIMI_WS_H

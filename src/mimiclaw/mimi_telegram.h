@@ -1,5 +1,7 @@
 /*
- * MimiClaw - Telegram Bot (Long Polling)
+ * MimiClaw-Arduino - Telegram Bot (Long Polling)
+ *
+ * Author: Billy Zhang（billy_zh@126.com）
  */
 #ifndef MIMI_TELEGRAM_H
 #define MIMI_TELEGRAM_H

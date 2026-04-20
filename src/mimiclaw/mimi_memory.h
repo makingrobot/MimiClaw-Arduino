@@ -1,5 +1,7 @@
 /*
- * MimiClaw - Memory Store (FILE-based)
+ * MimiClaw-Arduino - Memory Store (FILE-based)
+ *
+ * Author: Billy Zhang（billy_zh@126.com）
  */
 #ifndef MIMI_MEMORY_H
 #define MIMI_MEMORY_H

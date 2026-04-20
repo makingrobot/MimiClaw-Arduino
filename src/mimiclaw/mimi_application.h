@@ -5,6 +5,8 @@
  * Supports Anthropic Claude and OpenAI APIs, Telegram bot, Feishu bot
  * WebSocket gateway, persistent memory, cron scheduling,
  * web search, and a ReAct agent loop with tool calling.
+ *
+ * Author: Billy Zhang（billy_zh@126.com）
  */
 #ifndef MIMI_APPLICATION_H
 #define MIMI_APPLICATION_H
@@ -26,6 +28,7 @@
 #include "mimi_skills.h"
 #include "mimi_context.h"
 #include "mimi_serial_cli.h"
+#include "mimi_onboard.h"
 #include "mimi_websearch.h"
 #include "mimi_feishu.h"
 #include "src/framework/app/application.h"
@@ -76,6 +79,9 @@ public:
     void setTavilyKey(const char* key);
     void setSearchProvider(const char* provider);
 
+    // 注册工具
+    void registerTool(const MimiTool* tool);
+    
     // --- Memory ---
     MimiMemory& memory() { return _memory; }
     MimiSession& session() { return _session; }
@@ -108,6 +114,7 @@ private:
     MimiContext _context;
     MimiSerialCli _serial_cli;
     MimiWebsearch _websearch;
+    MimiOnboard _onboard;
     MimiFeishu _feishu;
 
     bool _started;

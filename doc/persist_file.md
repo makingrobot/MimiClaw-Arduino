@@ -19,6 +19,7 @@ MimiClaw需要文件系统来存储一些信息，数据结构如下：
     xxxxxx.md            — 自定义技能
   HEARTBEAT.md           — 心跳（定时任务）
   cron.json              — 定时任务配置（自动创建）
+  onboard.html           — 配置 HTML页面
 ```
 系统支持各种文件系统，如SPIFFS、FatFS、SDFS等，可根据硬件情况选择和配置<br/>
 若简单使用可选SPIFFS，用上传工具将 `persist-data` 文件夹上传至设备<br/>

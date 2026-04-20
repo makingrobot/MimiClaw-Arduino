@@ -1,5 +1,7 @@
 /*
- * MimiClaw - Context Builder (System Prompt)
+ * MimiClaw-Arduino - Context Builder (System Prompt)
+ *
+ * Author: Billy Zhang（billy_zh@126.com）
  */
 #ifndef MIMI_CONTEXT_H
 #define MIMI_CONTEXT_H

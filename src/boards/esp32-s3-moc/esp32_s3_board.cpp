@@ -1,5 +1,5 @@
 #include "config.h"
-#if BOARD_ESP32_S3_DEVKIT == 1
+#if BOARD_ESP32_S3_MOC == 1
 
 #include "driver/gpio.h"
 #include "board_config.h"
@@ -16,12 +16,15 @@
 
 #define TAG "Esp32S3Board"
 
+/**
+ * 19,20引脚用作USB，未引出
+ */
 std::vector<uint8_t> MimiBoard::allow_pins = {
-        0,1,2,3,4,5,6,7,8,9,
-        10,11,12,13,14,15,16,17,18,19,
-        20,21,
-        35,36,37,38,39,
-        40,41,42,45,46,47,48
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 
+        10, 11, 12, 13, 14, 15, 16, 17, 18,
+        21, 
+        35, 36, 37, 38, 39, 
+        40, 41, 42, 45, 46, 47, 48
     };
 
 void* create_board() { 
@@ -36,7 +39,6 @@ Esp32S3Board::Esp32S3Board() : MimiBoard() {
 
     InitFileSystem();
     Log::Info( TAG, "===== Board config completed. =====");
-
 }
 
 void Esp32S3Board::InitFileSystem() {

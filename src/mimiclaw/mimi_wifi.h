@@ -1,5 +1,7 @@
 /*
- * MimiClaw - WiFi Manager
+ * MimiClaw-Arduino - WiFi Manager
+ *
+ * Author: Billy Zhang（billy_zh@126.com）
  */
 #ifndef MIMI_WIFI_H
 #define MIMI_WIFI_H

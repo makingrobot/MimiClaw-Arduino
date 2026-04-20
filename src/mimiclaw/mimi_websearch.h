@@ -1,5 +1,7 @@
 /*
- * MimiClaw - Web Search
+ * MimiClaw-Arduino - Web Search
+ *
+ * Author: Billy Zhang（billy_zh@126.com）
  */
 #ifndef MIMI_WEBSEARCH_H
 #define MIMI_WEBSEARCH_H

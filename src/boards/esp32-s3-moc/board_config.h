@@ -1,4 +1,4 @@
-#if BOARD_ESP32_S3_DEVKIT == 1
+#if BOARD_ESP32_S3_MOC == 1
 
 #ifndef _BOARD_CONFIG_H
 #define _BOARD_CONFIG_H
@@ -9,13 +9,7 @@
  * 本文件主要用于配置硬件相关的设置，如引脚
  */
 
-#define BOARD_VERSION                       2   // v1.1
-
-#if BOARD_VERSION==2
-#define BUILTIN_LED_PIN                     GPIO_NUM_38
-#elif
 #define BUILTIN_LED_PIN                     GPIO_NUM_48
-#endif
 
 #define SD_CLK_PIN                          GPIO_NUM_NC 
 #define SD_MISO_PIN                         GPIO_NUM_NC 

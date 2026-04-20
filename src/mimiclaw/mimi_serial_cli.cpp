@@ -490,7 +490,7 @@ static int cmd_config_show(int argc, char **argv)
 {
     printf("=== Current Configuration ===\n");
     _print_config("WiFi SSID",          MIMI_PREF_WIFI,     MIMI_PREF_WIFI_SSID,        false);
-    _print_config("WiFi Pass",          MIMI_PREF_WIFI,     MIMI_PREF_WIFI_PASSWORD,    true);
+    _print_config("WiFi Pass",          MIMI_PREF_WIFI,     MIMI_PREF_WIFI_PASS,    true);
     _print_config("TG Token",           MIMI_PREF_TG,       MIMI_PREF_TG_TOKEN,         true);
     _print_config("FS AppId",           MIMI_PREF_FS,       MIMI_PREF_FS_APPID,         false);
     _print_config("FS AppSecret",       MIMI_PREF_FS,       MIMI_PREF_FS_APPSECRET,     true);

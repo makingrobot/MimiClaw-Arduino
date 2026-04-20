@@ -1,3 +1,8 @@
+/**
+ * MimiClaw-Arduino
+ * 
+ * Author: Billy Zhang（billy_zh@126.com）
+ */
 #pragma once
 
 #include <ArduinoJson.h>

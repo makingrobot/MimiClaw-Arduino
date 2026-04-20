@@ -1,5 +1,7 @@
 /*
- * MimiClaw - LLM Proxy (Anthropic / OpenAI)
+ * MimiClaw-Arduino - LLM Proxy (Anthropic / OpenAI)
+ *
+ * Author: Billy Zhang（billy_zh@126.com）
  */
 #ifndef MIMI_LLM_H
 #define MIMI_LLM_H

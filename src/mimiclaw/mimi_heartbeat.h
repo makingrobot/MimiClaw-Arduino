@@ -1,5 +1,7 @@
 /*
- * MimiClaw - Heartbeat Service
+ * MimiClaw-Arduino - Heartbeat Service
+ *
+ * Author: Billy Zhang（billy_zh@126.com）
  */
 #ifndef MIMI_HEARTBEAT_H
 #define MIMI_HEARTBEAT_H

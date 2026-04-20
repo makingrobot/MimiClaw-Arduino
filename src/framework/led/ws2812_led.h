@@ -52,7 +52,7 @@ private:
     std::vector<uint8_t> light_set_ = { 0 };  // 默认只使用第1个灯珠
 
     Mutex *mutex_;
-    uint8_t r_ = 0, g_ = 0, b_ = 0;
+    uint8_t r_ = 255, g_ = 0, b_ = 0;  // 默认显示红色
     Adafruit_NeoPixel *pixels_ = nullptr;
 
     void Stop();

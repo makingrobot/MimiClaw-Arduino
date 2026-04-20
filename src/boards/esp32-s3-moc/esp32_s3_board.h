@@ -1,5 +1,5 @@
 #include "config.h"
-#if BOARD_ESP32_S3_DEVKIT == 1
+#if BOARD_ESP32_S3_MOC == 1
 
 #ifndef _ESP32_S3_BOARD_H
 #define _ESP32_S3_BOARD_H
@@ -21,6 +21,7 @@ public:
     Esp32S3Board();
     virtual Led* GetLed() override { return led_; }
     virtual FileSystem* GetFileSystem() override { return filesystem_; }
+
 };
 
 #endif //_ESP32_S3_BOARD_H

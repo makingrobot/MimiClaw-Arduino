@@ -1,5 +1,7 @@
 /*
- * MimiClaw - Message Bus (FreeRTOS queue-based)
+ * MimiClaw-Arduino - Message Bus (FreeRTOS queue-based)
+ *
+ * Author: Billy Zhang（billy_zh@126.com）
  */
 #ifndef MIMI_BUS_H
 #define MIMI_BUS_H

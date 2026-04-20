@@ -1,3 +1,8 @@
+/**
+ * MimiClaw-Arduino
+ * 
+ * Author: Billy Zhang（billy_zh@126.com）
+ */
 #ifndef _FEISHU_PACK_H
 #define _FEISHU_PACK_H
 

@@ -1,5 +1,7 @@
 /*
- * MimiClaw - Feishu Bot (Long Polling)
+ * MimiClaw-Arduino - Feishu Bot (Long Polling)
+ *
+ * Author: Billy Zhang（billy_zh@126.com）
  */
 #ifndef MIMI_FEISHU_H
 #define MIMI_FEISHU_H

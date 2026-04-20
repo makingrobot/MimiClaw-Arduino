@@ -1,5 +1,7 @@
 /*
- * MimiClaw - Global Configuration
+ * MimiClaw-Arduino - Global Configuration
+ *
+ * Author: Billy Zhang（billy_zh@126.com）
  */
 #ifndef MIMI_CONFIG_H
 #define MIMI_CONFIG_H
@@ -25,6 +27,17 @@
 #ifndef MIMI_WIFI_RETRY_MAX_MS
 #define MIMI_WIFI_RETRY_MAX_MS       30000
 #endif
+
+// ── Proxy ───────────────────────────────────────────────────
+#ifndef MIMI_PROXY_HOST
+#define MIMI_PROXY_HOST                     ""
+#endif
+#ifndef MIMI_PROXY_PORT
+#define MIMI_PROXY_PORT                     0
+#endif
+#ifndef MIMI_PROTY_TYPE
+#define MIMI_PROXY_TYPE                    "http"
+#endif 
 
 // ── Telegram ───────────────────────────────────────────────────
 #ifndef MIMI_TG_TOKEN
@@ -68,25 +81,25 @@
 
 // ── Agent ──────────────────────────────────────────────────────
 #ifndef MIMI_AGENT_STACK
-#define MIMI_AGENT_STACK             (24 * 1024)
+#define MIMI_AGENT_STACK                (24 * 1024)
 #endif
 #ifndef MIMI_AGENT_PRIO
-#define MIMI_AGENT_PRIO              6
+#define MIMI_AGENT_PRIO                 6
 #endif
 #ifndef MIMI_AGENT_CORE
-#define MIMI_AGENT_CORE              1
+#define MIMI_AGENT_CORE                 1
 #endif
 #ifndef MIMI_AGENT_MAX_HISTORY
-#define MIMI_AGENT_MAX_HISTORY       20
+#define MIMI_AGENT_MAX_HISTORY          20
 #endif
 #ifndef MIMI_AGENT_MAX_TOOL_ITER
-#define MIMI_AGENT_MAX_TOOL_ITER     10
+#define MIMI_AGENT_MAX_TOOL_ITER        10
 #endif
 #ifndef MIMI_MAX_TOOL_CALLS
-#define MIMI_MAX_TOOL_CALLS          4
+#define MIMI_MAX_TOOL_CALLS             4
 #endif
 #ifndef MIMI_AGENT_SEND_WORKING_STATUS
-#define MIMI_AGENT_SEND_WORKING_STATUS 1
+#define MIMI_AGENT_SEND_WORKING_STATUS  1
 #endif
 
 // ── Timezone ───────────────────────────────────────────────────
@@ -96,22 +109,22 @@
 
 // ── LLM ────────────────────────────────────────────────────────
 #ifndef MIMI_LLM_MODEL
-#define MIMI_LLM_MODEL       "claude-opus-4-5"
+#define MIMI_LLM_MODEL              "claude-opus-4-5"
 #endif
 #ifndef MIMI_LLM_PROVIDER
-#define MIMI_LLM_PROVIDER    "anthropic"
+#define MIMI_LLM_PROVIDER           "anthropic"
 #endif
 #ifndef MIMI_LLM_MAX_TOKENS
 #define MIMI_LLM_MAX_TOKENS          4096
 #endif
 #ifndef MIMI_LLM_API_URL
-#define MIMI_LLM_API_URL           "https://api.anthropic.com/v1/messages"
+#define MIMI_LLM_API_URL            "https://api.anthropic.com/v1/messages"
 #endif
 #ifndef MIMI_LLM_API_KEY
-#define MIMI_LLM_API_KEY          ""
+#define MIMI_LLM_API_KEY            ""
 #endif
 #ifndef MIMI_OPENAI_MODEL
-#define MIMI_OPENAI_MODEL         ""
+#define MIMI_OPENAI_MODEL           ""
 #endif
 #ifndef MIMI_LLM_API_VERSION
 #define MIMI_LLM_API_VERSION         "2023-06-01"
@@ -136,16 +149,16 @@
 
 // ── FILE / Storage ───────────────────────────────────────────
 #ifndef MIMI_FILE_BASE
-#define MIMI_FILE_BASE             ""
+#define MIMI_FILE_BASE                  ""
 #endif
 #ifndef MIMI_FILE_CONFIG_DIR
-#define MIMI_FILE_CONFIG_DIR       MIMI_FILE_BASE "/config"
+#define MIMI_FILE_CONFIG_DIR            MIMI_FILE_BASE "/config"
 #endif
 #ifndef MIMI_FILE_MEMORY_DIR
-#define MIMI_FILE_MEMORY_DIR       MIMI_FILE_BASE "/memory"
+#define MIMI_FILE_MEMORY_DIR            MIMI_FILE_BASE "/memory"
 #endif
 #ifndef MIMI_FILE_SESSION_DIR
-#define MIMI_FILE_SESSION_DIR      MIMI_FILE_BASE "/sessions"
+#define MIMI_FILE_SESSION_DIR           MIMI_FILE_BASE "/sessions"
 #endif
 #ifndef MIMI_MEMORY_FILE
 #define MIMI_MEMORY_FILE             MIMI_FILE_MEMORY_DIR "/MEMORY.md"
@@ -207,22 +220,22 @@
 #endif
 
 // ── Channel identifiers ────────────────────────────────────────
-#define MIMI_CHAN_TELEGRAM   "telegram"
-#define MIMI_CHAN_WEBSOCKET  "websocket"
-#define MIMI_CHAN_CLI        "cli"
-#define MIMI_CHAN_SYSTEM     "system"
-#define MIMI_CHAN_FEISHU     "feishu"
+#define MIMI_CHAN_TELEGRAM          "telegram"
+#define MIMI_CHAN_WEBSOCKET         "websocket"
+#define MIMI_CHAN_CLI               "cli"
+#define MIMI_CHAN_SYSTEM            "system"
+#define MIMI_CHAN_FEISHU            "feishu"
 
 // ── Preferences namespaces ─────────────────────────────────────
-#define MIMI_PREF_WIFI      "wifi_config"
-#define MIMI_PREF_TG        "tg_config"
-#define MIMI_PREF_LLM       "llm_config"
-#define MIMI_PREF_PROXY     "proxy_config"
-#define MIMI_PREF_SEARCH    "search_config"
-#define MIMI_PREF_FS        "feishu_config"
+#define MIMI_PREF_WIFI              "wifi_config"
+#define MIMI_PREF_TG                "tg_config"
+#define MIMI_PREF_LLM               "llm_config"
+#define MIMI_PREF_PROXY             "proxy_config"
+#define MIMI_PREF_SEARCH            "search_config"
+#define MIMI_PREF_FS                "feishu_config"
 
 #define MIMI_PREF_WIFI_SSID         "ssid"
-#define MIMI_PREF_WIFI_PASSWORD     "password"
+#define MIMI_PREF_WIFI_PASS         "password"
 #define MIMI_PREF_TG_TOKEN          "token"
 #define MIMI_PREF_LLM_APIKEY        "api_key"
 #define MIMI_PREF_LLM_MODEL         "model"
