@@ -33,6 +33,7 @@ public:
     virtual void SetText(uint8_t line, const std::string& text) override;
 
     void SetText(uint8_t line, const tft_line_t& line_t);
+    void AppendText(const tft_line_t& line_t);
 
 protected:
     TFT_eSPI* driver_ = nullptr;

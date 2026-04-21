@@ -6,8 +6,7 @@
 #include <ArduinoJson.h>
 #include "arduino_json_psram.h"
 #include <Preferences.h>
-#include "src/framework/board/board.h"
-#include "src/framework/file/file_system.h"
+#include "onboard_html.h"
 
 #define TAG "onboard"
 
@@ -114,10 +113,7 @@ String MimiOnboard::getSsid() {
 }
 
 void MimiOnboard::handleRoot() {
-    FileSystem *fsys = Board::GetInstance().GetFileSystem();
-    File f = fsys->OpenFile("/onboard.html");
-    _webserver->streamFile(f, "text/html"); // 输出文件内容
-    f.close();
+    _webserver->send(200, "text/html", ONBOARD_HTML);
 }
 
 void MimiOnboard::handleScan() {
@@ -142,6 +138,8 @@ void MimiOnboard::handleScan() {
         item["auth"] = WiFi.encryptionType(i) != WIFI_AUTH_OPEN; //bool
     }
 
+    WiFi.scanDelete();
+    
     String ssidStr;
     serializeJson(ssidArr, ssidStr);
     _webserver->send(200, "application/json", ssidStr);

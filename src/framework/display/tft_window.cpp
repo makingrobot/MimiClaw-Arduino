@@ -44,4 +44,8 @@ void TftWindow::SetText(uint8_t line, const tft_line_t& line_t) {
     }
 }
 
+void TftWindow::AppendText(const tft_line_t& line_t) { 
+    
+}
+
 #endif //CONFIG_USE_TFT_ESPI

@@ -10,9 +10,18 @@
 #ifndef TFT_WINDOW_H
 #define TFT_WINDOW_H
 
-#include <Arduino_GFX_Library.h>
+#include "src/libs/GFX_Library/Arduino_GFX_Library.h"
 #include <string>
 #include "window.h"
+
+typedef struct  {
+    std::string text = "";
+    uint16_t text_size = 4;
+    uint16_t text_color;
+    uint16_t text_bg_color;
+    uint16_t y_pos = 0;
+    uint16_t x_pos = 2;
+} gfx_line_t;
 
 class GfxWindow : public Window {
 public:
@@ -20,6 +29,10 @@ public:
     virtual void SetStatus(const std::string& status) override;
     virtual void SetText(uint8_t line, const std::string& text) override;
    
+    void SetText(uint8_t line, const gfx_line_t& line_t);
+    void AppendText(const std::string& text);
+    void AppendText(const gfx_line_t& line_t);
+
 protected:
     Arduino_GFX* driver_ = nullptr;
 
@@ -27,7 +40,9 @@ private:
     void Update();
     
     std::string status_ = "";
-    std::string text_ = "";
+    std::vector<gfx_line_t> text_line_;
+
+    uint8_t max_line_ = 1;  //start from 1.
 };
 
 #endif //TFT_WINDOW_H

@@ -45,9 +45,13 @@ void Esp32S3Board::InitFileSystem() {
     Log::Info( TAG, "Init file system ......" );
 
 #if CONFIS_USE_SPIFFS==1
-    if (!SPIFFS.begin()) {
-        Log::Error(TAG, "SPIFFS Mount Failed");
-        return;
+    if (!SPIFFS.begin(true)) {
+        Log::Error(TAG, __LINE__, "SPIFFS Mount Failed");
+        if(!SPIFFS.format()){
+            Log::Error(TAG, "SPIFFS format failed");
+            return;
+        }
+        SPIFFS.begin();
     }
 
     filesystem_ = new FileSystem(SPIFFS);

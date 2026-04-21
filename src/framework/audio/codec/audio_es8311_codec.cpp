@@ -5,7 +5,7 @@
  * Author: Billy Zhang（billy_zh@126.com）
  */
 #include "config.h"
-#if CONFIG_AUDIO_CODEC_ES8311==1
+#if CONFIG_USE_AUDIO==1 && CONFIG_AUDIO_CODEC_ES8311==1
 
 #include "audio_es8311_codec.h"
 #include "../../sys/log.h"

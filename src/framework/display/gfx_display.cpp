@@ -59,7 +59,7 @@ void GfxDisplay::SetStatus(const std::string& status) {
 
 void GfxDisplay::SetText(const std::string& text) {
     if (window_!=nullptr) {
-        window_->SetText(text);
+        window_->SetText(1, text);
     }
 }
 

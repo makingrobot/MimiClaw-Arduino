@@ -12,7 +12,7 @@
 
 #include "disp_driver.h"
 #include <Arduino.h>
-#include <Arduino_GFX_Library.h>
+#include "src/libs/GFX_Library/Arduino_GFX_Library.h"
 #include <lvgl.h>
 
 class GfxLvglDriver : public DispDriver {

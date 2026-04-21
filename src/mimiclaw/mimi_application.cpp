@@ -6,6 +6,11 @@
 #include "arduino_json_psram.h"
 #include "mimi_board.h"
 
+#if CONFIG_USE_DISPLAY==1
+#include "src/framework/display/display.h"
+#include "src/framework/display/gfx_window.h"
+#endif
+
 #define TAG "mimiapp"
 
 void* create_application() { 
@@ -27,14 +32,23 @@ bool MimiApplication::OnInit() {
               (int)heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
 #endif
 
+    Board& board = Board::GetInstance();
+    
     // Get FileSystem
-    FileSystem *file_system = Board::GetInstance().GetFileSystem();
+    FileSystem *file_system = board.GetFileSystem();
     if (file_system == nullptr) {
         MIMI_LOGE(TAG, __LINE__, "FileSystem mount failed");
         return false;
     }
     MIMI_LOGI(TAG, "fs type: %s, totalbytes: %ld, freebytes: %ld", 
             file_system->type().c_str(), file_system->totalBytes(), file_system->freeBytes());
+
+#if CONFIG_USE_DISPLAY==1
+    Display *display = board.GetDisplay();
+    if (display != nullptr) {
+        display->Init();
+    }
+#endif
 
     // Initialize subsystems
     if (!_bus.begin()) {
@@ -137,6 +151,7 @@ void MimiApplication::outboundTask(void* arg) {
         if (!self->_bus.popOutbound(&msg, UINT32_MAX)) continue;
 
         MIMI_LOGI(TAG, "Dispatching response to %s:%s", msg.channel, msg.chat_id);
+        self->showOnDisplay("Response to " + std::string(msg.channel));
 
         if (strcmp(msg.channel, MIMI_CHAN_TELEGRAM) == 0) {
             if (!self->_telegram.sendMessage(msg.chat_id, msg.content)) {
@@ -181,7 +196,8 @@ bool MimiApplication::Start() {
     // Connect WiFi
     if (!_wifi.start()) {
         MIMI_LOGW(TAG, "WiFi start failed");
-        // 启动配置
+        // WiFi信息缺失，启动配置
+        showOnDisplay("Waiting for configure WiFi...");
         _onboard.start();  //阻塞
         return false;
     }
@@ -191,15 +207,18 @@ bool MimiApplication::Start() {
         MIMI_LOGW(TAG, "WiFi connection timeout");
         
         // 启动配置
+        showOnDisplay("Waiting for configure WiFi...");
         _onboard.start();  //阻塞
         return false;
     }
 
     if (!_onboard.start(true)) {
+        showOnDisplay("Onboard service start failed");
         MIMI_LOGW(TAG, "Onboard start failed");
         return false;
     }
 
+    showOnDisplay(std::string("WiFi connected: ") + _wifi.getIP());
     MIMI_LOGI(TAG, "WiFi connected: %s", _wifi.getIP());
 
     // Start outbound dispatch first
@@ -225,6 +244,8 @@ bool MimiApplication::Start() {
     _serial_cli.start();
     
     _started = true;
+
+    showOnDisplay("Services is ready, Waiting to talk...");
     MIMI_LOGI(TAG, "All services started!");
     return true;
 }
@@ -330,4 +351,11 @@ void MimiApplication::installSkills() {
     for (const SkillInfo *info : board->skills()) {
         _skills.installSkill(info);
     }
+}
+
+void MimiApplication::showOnDisplay(const std::string& text) {
+#if CONFIG_USE_DISPLAY==1
+    GfxWindow* window = (GfxWindow*)(Board::GetInstance().GetDisplay()->GetWindow());
+    window->AppendText(text);
+#endif
 }

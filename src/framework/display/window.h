@@ -13,14 +13,12 @@ class Window {
 public:
     virtual void SetStatus(const std::string& status) = 0;
     virtual void SetText(uint8_t line, const std::string& text) = 0;
-
 };
 
 class NoWindow : public Window {
 public:
     virtual void SetStatus(const std::string& status) override { };
     virtual void SetText(uint8_t line, const std::string& text) override { };
-    
 };
 
 #endif //WINDOW_H

@@ -11,7 +11,7 @@
 #define _GFX_DISPLAY_H
 
 #include "display.h"
-#include <Arduino_GFX_Library.h>
+#include "src/libs/GFX_Library/Arduino_GFX_Library.h"
 #include "gfx_window.h"
 
 class GfxDisplay : public Display {

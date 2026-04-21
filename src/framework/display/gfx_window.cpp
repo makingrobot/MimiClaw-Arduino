@@ -20,23 +20,59 @@ void GfxWindow::Setup(Arduino_GFX* driver) {
 void GfxWindow::SetStatus(const std::string& status) {
     status_ = status;
 
-    Update();
+    driver_->setCursor(4, 4);
+    driver_->println(status_.c_str());
 }
 
 void GfxWindow::SetText(uint8_t line, const std::string& text) {
-    text_ = text;
+    gfx_line_t line_t;
+    line_t.text = text;
 
-    Update();
+    SetText(line, line_t);
 }
 
-void GfxWindow::Update() {
+void GfxWindow::SetText(uint8_t line, const gfx_line_t& line_t) {
+    if (line > text_line_.size()) {
+        text_line_.resize(line);
+    }
+    text_line_[line-1] = line_t;
 
-    driver_->fillScreen(RGB565_BLACK);
-    driver_->setCursor(0, 0);
+    if (line > max_line_) {
+        max_line_ = line;
+    }
 
-    driver_->println(status_.c_str());
-    driver_->println(text_.c_str());
+    int y_pos = 2;
+    for (const gfx_line_t& ln : text_line_) {
+        driver_->setCursor(ln.x_pos, y_pos);
+        driver_->setTextSize(ln.text_size);
+        driver_->setTextColor(ln.text_color, ln.text_bg_color);
+        driver_->println(ln.text.c_str());
+        y_pos += ln.text_size + 2;
+    }
+}
 
+void GfxWindow::AppendText(const std::string& text) {
+    gfx_line_t line_t;
+    line_t.text = text;
+
+    AppendText(line_t);
+}
+
+void GfxWindow::AppendText(const gfx_line_t& line_t) { 
+    uint8_t line = max_line_;
+    if (line > text_line_.size()) {
+        text_line_.resize(line);
+    }
+    text_line_[line-1] = line_t;
+
+    int y_pos = 2;
+    for (const gfx_line_t& ln : text_line_) {
+        driver_->setCursor(ln.x_pos, y_pos);
+        driver_->setTextSize(ln.text_size);
+        driver_->setTextColor(ln.text_color, ln.text_bg_color);
+        driver_->println(ln.text.c_str());
+        y_pos += ln.text_size + 2;
+    }
 }
 
 #endif //CONFIG_USE_GFX_LIBRARY

@@ -104,7 +104,7 @@
 
 // ── Timezone ───────────────────────────────────────────────────
 #ifndef MIMI_TIMEZONE
-#define MIMI_TIMEZONE                "PST8PDT,M3.2.0,M11.1.0"
+#define MIMI_TIMEZONE                "GMT+8"
 #endif
 
 // ── LLM ────────────────────────────────────────────────────────
@@ -112,7 +112,7 @@
 #define MIMI_LLM_MODEL              "claude-opus-4-5"
 #endif
 #ifndef MIMI_LLM_PROVIDER
-#define MIMI_LLM_PROVIDER           "anthropic"
+#define MIMI_LLM_PROVIDER           "anthropic"       // anthropic | openai | deepseek
 #endif
 #ifndef MIMI_LLM_MAX_TOKENS
 #define MIMI_LLM_MAX_TOKENS          4096
@@ -197,7 +197,7 @@
 
 // ── Web search ──────────────────────────────────────────────────
 #ifndef MIMI_SEARCH_PROVIDER
-#define MIMI_SEARCH_PROVIDER        "tavily"  # tavily | brave
+#define MIMI_SEARCH_PROVIDER        "tavily"  // tavily | brave
 #endif
 #ifndef MIMI_TAVILY_KEY
 #define MIMI_TAVILY_KEY             ""

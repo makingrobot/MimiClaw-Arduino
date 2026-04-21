@@ -82,6 +82,9 @@ public:
     // 注册工具
     void registerTool(const MimiTool* tool);
     
+    // 在显示器上显示文本
+    void showOnDisplay(const std::string& text);
+
     // --- Memory ---
     MimiMemory& memory() { return _memory; }
     MimiSession& session() { return _session; }

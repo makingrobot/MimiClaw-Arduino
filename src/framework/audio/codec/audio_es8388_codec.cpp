@@ -5,7 +5,7 @@
  * Author: Billy Zhang（billy_zh@126.com）
  */
 #include "config.h"
-#if CONFIG_AUDIO_CODEC_ES8388==1
+#if CONFIG_USE_AUDIO==1 && CONFIG_AUDIO_CODEC_ES8388==1
 
 #include "audio_es8388_codec.h"
 #include "src/framework/sys/log.h"

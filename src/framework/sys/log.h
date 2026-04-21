@@ -76,10 +76,10 @@ public:
                 return;
             }
 #if CONFIG_USE_ESP_LOG==1
-            snprintf(buffer, LOG_BUFFER_LEN-1, "[%s] %s", tag, format);
+            snprintf(buffer, LOG_BUFFER_LEN-1, "[%s][%s][%d] %s", timebuf, tag, xPortGetCoreID(), format);
             log_d(buffer, args...);
 #else
-            snprintf(buffer, LOG_BUFFER_LEN-1, "D[%s][%s] %s\n", timebuf, tag, format);
+            snprintf(buffer, LOG_BUFFER_LEN-1, "D[%s][%s][%d] %s\n", timebuf, tag, xPortGetCoreID(), format);
             Serial.printf(buffer, args...);
 #endif
             free(buffer);
@@ -98,10 +98,10 @@ public:
                 return;
             }
 #if CONFIG_USE_ESP_LOG==1
-            snprintf(buffer, LOG_BUFFER_LEN-1, "[%s] %s", tag, format);
+            snprintf(buffer, LOG_BUFFER_LEN-1, "[%s][%s_%u][%d] %s", timebuf, tag, line, xPortGetCoreID(), format);
             log_d(buffer, args...);
 #else
-            snprintf(buffer, LOG_BUFFER_LEN-1, "D[%s][%s_%u] %s\n", timebuf, tag, line, format);
+            snprintf(buffer, LOG_BUFFER_LEN-1, "D[%s][%s_%u][%d] %s\n", timebuf, tag, line, xPortGetCoreID(), format);
             Serial.printf(buffer, args...);
 #endif
             free(buffer);
@@ -120,10 +120,10 @@ public:
                 return;
             }
 #if CONFIG_USE_ESP_LOG==1
-            snprintf(buffer, LOG_BUFFER_LEN-1, "[%s] %s", tag, format);
+            snprintf(buffer, LOG_BUFFER_LEN-1, "[%s][%s][%d] %s", timebuf, tag, xPortGetCoreID(), format);
             log_e(buffer, args...);
 #else
-            snprintf(buffer, LOG_BUFFER_LEN-1, "E[%s][%s] %s\n", timebuf, tag, format);
+            snprintf(buffer, LOG_BUFFER_LEN-1, "E[%s][%s][%d] %s\n", timebuf, tag, xPortGetCoreID(), format);
             Serial.printf(buffer, args...);
 #endif
             free(buffer);
@@ -142,10 +142,10 @@ public:
                 return;
             }
 #if CONFIG_USE_ESP_LOG==1
-            snprintf(buffer, LOG_BUFFER_LEN-1, "[%s] %s", tag, format);
+            snprintf(buffer, LOG_BUFFER_LEN-1, "[%s][%s_%u][%d] %s", timebuf, tag, line, xPortGetCoreID(), format);
             log_e(buffer, args...);
 #else
-            snprintf(buffer, LOG_BUFFER_LEN-1, "E[%s][%s_%u] %s\n", timebuf, tag, line, format);
+            snprintf(buffer, LOG_BUFFER_LEN-1, "E[%s][%s_%u][%d] %s\n", timebuf, tag, line, xPortGetCoreID(), format);
             Serial.printf(buffer, args...);
 #endif
             free(buffer);

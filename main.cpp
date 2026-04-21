@@ -18,7 +18,7 @@ Application *app = nullptr;
 void setup() {
     Serial.begin(115200);
 
-    Log::Info(TAG, "application starting.");
+    Log::Info(TAG, "application start on core %d", xPortGetCoreID());
 
     // 创建应用实例
     app = &Application::GetInstance();

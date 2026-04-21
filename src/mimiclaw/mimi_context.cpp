@@ -3,11 +3,31 @@
 
 #define TAG  "context"
 
-MimiContext::MimiContext() : _memory(nullptr), _skills(nullptr) {}
+static const char DEFAULT_SOUL[] PROGMEM =
+    "I am MimiClaw, a personal AI assistant running on an ESP32-S3 microcontroller.\n\n"
+    "Personality:\n"
+    "- Helpful and friendly\n"
+    "- Concise and to the point\n"
+    "- Curious and eager to learn\n\n"
+    "Values:\n"
+    "- Accuracy over speed\n"
+    "- User privacy and safety\n"
+    "- Transparency in actions\n";
+
+static const char DEFAULT_USER[] PROGMEM =
+    "# User Profile\n\n"
+    "- Name: (not set)\n"
+    "- Language: Chinese / English\n"
+    "- Timezone: (not set)\n";
+
+
+MimiContext::MimiContext() : _memory(nullptr), _skills(nullptr) {
+
+}
 
 size_t MimiContext::appendFile(char* buf, size_t size, size_t offset, const char* path, const char* header) {
     File f = _file_system->OpenFile(path, "r");
-    if (!f) return offset;
+    if (!f) { return offset; }
 
     if (header && offset < size - 1) {
         offset += snprintf(buf + offset, size - offset, "\n## %s\n\n", header);
@@ -59,8 +79,15 @@ bool MimiContext::buildSystemPrompt(char* buf, size_t size) {
         "When a task matches a skill, read the full skill file for detailed instructions.\n"
         "You can create new skills using write_file to " MIMI_SKILLS_PREFIX "<name>.md.\n");
 
-    // Bootstrap files
+    // Bootstrap files    
+    if (!_file_system->ExistsFile(MIMI_SOUL_FILE)) {
+        _file_system->WriteFile(MIMI_SOUL_FILE, DEFAULT_SOUL);
+    }
     off = appendFile(buf, size, off, MIMI_SOUL_FILE, "Personality");
+
+    if (!_file_system->ExistsFile(MIMI_USER_FILE)) {
+        _file_system->WriteFile(MIMI_USER_FILE, DEFAULT_SOUL);
+    }
     off = appendFile(buf, size, off, MIMI_USER_FILE, "User Info");
 
     // Long-term memory
