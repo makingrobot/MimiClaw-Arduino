@@ -43,6 +43,15 @@ bool MimiApplication::OnInit() {
     MIMI_LOGI(TAG, "fs type: %s, totalbytes: %ld, freebytes: %ld", 
             file_system->type().c_str(), file_system->totalBytes(), file_system->freeBytes());
 
+    std::vector<const char *> dirs = {MIMI_FILE_SKILLS_DIR, MIMI_FILE_SESSION_DIR, MIMI_FILE_MEMORY_DIR, MIMI_FILE_CONFIG_DIR};
+    for (const char *dir : dirs) {
+        if (!file_system->ExistsFile(dir)) {
+            if (!file_system->CreateDir(dir)) {
+                MIMI_LOGE(TAG, __LINE__, "Directory %s create failed.", dir);
+            }
+        }
+    }
+
 #if CONFIG_USE_DISPLAY==1
     Display *display = board.GetDisplay();
     if (display != nullptr) {

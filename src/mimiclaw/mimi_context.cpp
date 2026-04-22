@@ -26,7 +26,7 @@ MimiContext::MimiContext() : _memory(nullptr), _skills(nullptr) {
 }
 
 size_t MimiContext::appendFile(char* buf, size_t size, size_t offset, const char* path, const char* header) {
-    File f = _file_system->OpenFile(path, "r");
+    File f = _file_system->OpenFile(path, FILE_READ);
     if (!f) { return offset; }
 
     if (header && offset < size - 1) {
@@ -75,18 +75,20 @@ bool MimiContext::buildSystemPrompt(char* buf, size_t size) {
         "- Keep MEMORY.md concise and organized.\n"
         "- Proactively save memory without being asked.\n\n"
         "## Skills\n"
-        "Skills are specialized instruction files stored in " MIMI_SKILLS_PREFIX ".\n"
+        "Skills are specialized instruction files stored in " MIMI_FILE_SKILLS_DIR ".\n"
         "When a task matches a skill, read the full skill file for detailed instructions.\n"
-        "You can create new skills using write_file to " MIMI_SKILLS_PREFIX "<name>.md.\n");
+        "You can create new skills using write_file to " MIMI_FILE_SKILLS_DIR "/<name>.md.\n");
 
     // Bootstrap files    
     if (!_file_system->ExistsFile(MIMI_SOUL_FILE)) {
-        _file_system->WriteFile(MIMI_SOUL_FILE, DEFAULT_SOUL);
+        _file_system->WriteFile(MIMI_SOUL_FILE, DEFAULT_SOUL); 
+        MIMI_LOGI(TAG, "Soul file %s saved.", MIMI_SOUL_FILE); /* file: /config/SOUL.md */
     }
     off = appendFile(buf, size, off, MIMI_SOUL_FILE, "Personality");
 
     if (!_file_system->ExistsFile(MIMI_USER_FILE)) {
-        _file_system->WriteFile(MIMI_USER_FILE, DEFAULT_SOUL);
+        _file_system->WriteFile(MIMI_USER_FILE, DEFAULT_SOUL); 
+        MIMI_LOGI(TAG, "User file %s saved.", MIMI_USER_FILE); /* file: /config/USER.md */
     }
     off = appendFile(buf, size, off, MIMI_USER_FILE, "User Info");
 

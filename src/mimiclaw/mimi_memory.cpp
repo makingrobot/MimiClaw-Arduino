@@ -22,7 +22,7 @@ void MimiMemory::getDateStr(char* buf, size_t size, int daysAgo) {
 }
 
 bool MimiMemory::readLongTerm(char* buf, size_t size) {
-    File f = _file_system->OpenFile(MIMI_MEMORY_FILE, "r");
+    File f = _file_system->OpenFile(MIMI_MEMORY_FILE, FILE_READ);
     if (!f) {
         buf[0] = '\0';
         return false;
@@ -34,14 +34,14 @@ bool MimiMemory::readLongTerm(char* buf, size_t size) {
 }
 
 bool MimiMemory::writeLongTerm(const char* content) {
-    File f = _file_system->OpenFile(MIMI_MEMORY_FILE, "w");
+    File f = _file_system->OpenFile(MIMI_MEMORY_FILE, FILE_WRITE);
     if (!f) {
         MIMI_LOGE(TAG, __LINE__, "Cannot write %s", MIMI_MEMORY_FILE);
         return false;
     }
     f.print(content);
     f.close();
-    MIMI_LOGI(TAG, "Long-term memory updated (%d bytes)", (int)strlen(content));
+    MIMI_LOGI(TAG, "Long-term memory file %s updated (%d bytes)", MIMI_MEMORY_FILE, (int)strlen(content)); /* file: ／memory/MEMORY.md */
     return true;
 }
 
@@ -52,7 +52,7 @@ bool MimiMemory::appendToday(const char* note) {
     String path = String(MIMI_FILE_MEMORY_DIR) + "/" + dateStr + ".md";
 
     bool exists = _file_system->ExistsFile(path.c_str());
-    File f = _file_system->OpenFile(path.c_str(), exists ? "a" : "w");
+    File f = _file_system->OpenFile(path.c_str(), exists ? FILE_APPEND : FILE_WRITE);
     if (!f) {
         MIMI_LOGE(TAG, __LINE__, "Cannot open %s", path.c_str());
         return false;
@@ -63,6 +63,7 @@ bool MimiMemory::appendToday(const char* note) {
     }
     f.printf("%s\n", note);
     f.close();
+    MIMI_LOGI(TAG, "Daily file %s saved.", path.c_str());   /* file: /memory/yyyyMMdd.md */
     return true;
 }
 
@@ -75,7 +76,7 @@ bool MimiMemory::readRecent(char* buf, size_t size, int days) {
         getDateStr(dateStr, sizeof(dateStr), i);
 
         String path = String(MIMI_FILE_MEMORY_DIR) + "/" + dateStr + ".md";
-        File f = _file_system->OpenFile(path.c_str(), "r");
+        File f = _file_system->OpenFile(path.c_str(), FILE_READ);
         if (!f) continue;
 
         if (offset > 0 && offset < size - 4) {

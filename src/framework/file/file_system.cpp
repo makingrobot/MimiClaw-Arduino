@@ -37,7 +37,7 @@ bool FileSystem::ExistsFile(const char *path) {
 }
 
 File FileSystem::OpenFile(const char *path,  const char *mode) {
-    bool create = (strcmp(mode, "r") != 0);
+    bool create = (mode && mode[0] != 'r');
     return fs_.open(path, mode, create);
 }
 

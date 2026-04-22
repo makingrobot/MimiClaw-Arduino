@@ -1,6 +1,7 @@
 #include "mimi_session.h"
 #include "mimi_config.h"
 #include <time.h>
+#include <MD5Builder.h>
 #include "arduino_json_psram.h"
 
 #define TAG  "session"
@@ -13,13 +14,28 @@ bool MimiSession::begin(FileSystem *file_system) {
     return true;
 }
 
+/**
+ * 会话文件路径
+ * 
+ * 注意：文件名（路径）长度受具体文件系统限制
+ * 已知限制：
+ *   SPIFFS文件名最长为32个字符，包括可能的路径分隔符（通常是/）
+ */
 String MimiSession::sessionPath(const char* chat_id) {
-    return String(MIMI_FILE_SESSION_DIR) + "/sess_" + chat_id + ".jsonl";
+    String tmp = String(chat_id);
+    if (tmp.length() > 12) {
+        MD5Builder md;
+        md.begin();               // 初始化MD5上下文
+        md.add(tmp);            // 添加数据
+        md.calculate();           // 执行哈希计算
+        tmp = md.toString().substring(8, 20); // 12 char.
+    }
+    return String(MIMI_FILE_SESSION_DIR) + "/s_" + tmp.c_str() + ".jsonl";
 }
 
 bool MimiSession::append(const char* chat_id, const char* role, const char* content) {
     String path = sessionPath(chat_id);
-    File f = _file_system->OpenFile(path.c_str(), "a");
+    File f = _file_system->OpenFile(path.c_str(), FILE_APPEND);
     if (!f) {
         MIMI_LOGE(TAG, __LINE__, "Cannot open session file %s", path.c_str());
         return false;
@@ -34,12 +50,13 @@ bool MimiSession::append(const char* chat_id, const char* role, const char* cont
     serializeJson(doc, line);
     f.println(line);
     f.close();
+    MIMI_LOGI(TAG, "Session file %s appended.", path.c_str()); /* file: /session/sess_xxx.jsonl */
     return true;
 }
 
 bool MimiSession::getHistoryJson(const char* chat_id, char* buf, size_t size, int maxMsgs) {
     String path = sessionPath(chat_id);
-    File f = _file_system->OpenFile(path.c_str(), "r");
+    File f = _file_system->OpenFile(path.c_str(), FILE_READ);
     if (!f) {
         snprintf(buf, size, "[]");
         return true;
@@ -96,7 +113,7 @@ bool MimiSession::getHistoryJson(const char* chat_id, char* buf, size_t size, in
 
 bool MimiSession::getHistoryJson(const char* chat_id, JsonArray& arr, int maxMsgs) {
     String path = sessionPath(chat_id);
-    File f = _file_system->OpenFile(path.c_str(), "r");
+    File f = _file_system->OpenFile(path.c_str(), FILE_READ);
     if (!f) return true; // No history is OK
 
     struct MsgEntry {

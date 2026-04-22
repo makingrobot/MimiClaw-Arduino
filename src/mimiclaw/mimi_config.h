@@ -151,6 +151,9 @@
 #ifndef MIMI_FILE_BASE
 #define MIMI_FILE_BASE                  ""
 #endif
+#ifndef MIMI_FILE_SKILLS_DIR
+#define MIMI_FILE_SKILLS_DIR           MIMI_FILE_BASE "/skills"
+#endif
 #ifndef MIMI_FILE_CONFIG_DIR
 #define MIMI_FILE_CONFIG_DIR            MIMI_FILE_BASE "/config"
 #endif
@@ -204,11 +207,6 @@
 #endif
 #ifndef MIMI_BRAVE_KEY              
 #define MIMI_BRAVE_KEY              ""
-#endif
-
-// ── Skills ─────────────────────────────────────────────────────
-#ifndef MIMI_SKILLS_PREFIX
-#define MIMI_SKILLS_PREFIX           MIMI_FILE_BASE "/skills/"
 #endif
 
 // ── WebSocket ──────────────────────────────────────────────────

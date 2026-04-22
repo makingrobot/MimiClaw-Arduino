@@ -290,7 +290,7 @@ static int cmd_skill_list(int argc, char **argv)
     MimiApplication *app = (MimiApplication *)(&Application::GetInstance());
     size_t n = app->skills().buildSummary(buf, 4096);
     if (n == 0) {
-        printf("No skills found under " MIMI_SKILLS_PREFIX ".\n");
+        printf("No skills found under " MIMI_FILE_SKILLS_DIR ".\n");
     } else {
         printf("=== Skills ===\n%s", buf);
     }
@@ -311,9 +311,9 @@ static bool _build_skill_path(const char *name, char *out, size_t out_size)
     if (strchr(name, '/') != NULL || strchr(name, '\\') != NULL) return false;
 
     if (_has_md_suffix(name)) {
-        snprintf(out, out_size, MIMI_SKILLS_PREFIX "%s", name);
+        snprintf(out, out_size, MIMI_FILE_SKILLS_DIR "/%s", name);
     } else {
-        snprintf(out, out_size, MIMI_SKILLS_PREFIX "%s.md", name);
+        snprintf(out, out_size, MIMI_FILE_SKILLS_DIR "/%s.md", name);
     }
     return true;
 }
@@ -335,7 +335,7 @@ static int cmd_skill_show(int argc, char **argv)
     }
 
     FileSystem *fsys = Board::GetInstance().GetFileSystem();
-    File f = fsys->OpenFile(path, "r");
+    File f = fsys->OpenFile(path, FILE_READ);
     if (!f) {
         printf("Skill not found: %s\n", path);
         return 1;
@@ -408,7 +408,7 @@ static int cmd_skill_search(int argc, char **argv)
         bool file_matched = _contains_nocase(name, keyword);
         int matched_line = 0;
 
-        File skill_f = fsys->OpenFile(full_path, "r");
+        File skill_f = fsys->OpenFile(full_path, FILE_READ);
         if (!skill_f) continue;
 
         char line[256];
@@ -716,7 +716,7 @@ bool MimiSerialCli::start() {
 
     /* skill_list */
     _console.registerCommand(ESP32Console::ConsoleCommand("skill_list", 
-        &cmd_skill_list, "List installed skills from MIMI_SKILLS_PREFIX"));
+        &cmd_skill_list, "List installed skills from MIMI_FILE_SKILLS_DIR"));
 
     /* skill_show */
     _console.registerCommand(ESP32Console::ConsoleCommand("skill_show", 

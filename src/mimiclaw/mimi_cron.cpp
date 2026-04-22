@@ -85,7 +85,7 @@ bool MimiCron::sanitizeDestination(CronJob* job) {
 }
 
 bool MimiCron::loadJobs() {
-    File f = _file_system->OpenFile(MIMI_CRON_FILE, "r");
+    File f = _file_system->OpenFile(MIMI_CRON_FILE, FILE_READ);
     if (!f) {
         MIMI_LOGI(TAG, "No cron file found, starting fresh");
         _jobCount = 0;
@@ -170,7 +170,7 @@ bool MimiCron::saveJobs() {
         item["delete_after_run"] = job->delete_after_run;
     }
 
-    File f = _file_system->OpenFile(MIMI_CRON_FILE, "w");
+    File f = _file_system->OpenFile(MIMI_CRON_FILE, FILE_WRITE);
     if (!f) {
         MIMI_LOGE(TAG, __LINE__, "Failed to open %s for writing", MIMI_CRON_FILE);
         return false;
@@ -178,7 +178,7 @@ bool MimiCron::saveJobs() {
 
     serializeJsonPretty(doc, f);
     f.close();
-    MIMI_LOGI(TAG, "Saved %d cron jobs", _jobCount);
+    MIMI_LOGI(TAG, "Cron file %s saved %d cron jobs", MIMI_CRON_FILE, _jobCount);  /* file: /cron.json */
     return true;
 }
 

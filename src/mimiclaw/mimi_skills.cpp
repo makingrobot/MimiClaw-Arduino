@@ -38,7 +38,7 @@ static const char BUILTIN_SKILL_CREATOR[] PROGMEM =
     "## How to create a skill\n"
     "1. Choose a short, descriptive name\n"
     "2. Write a SKILL.md file with: Title, Description, When to use, How to use\n"
-    "3. Save to " MIMI_SKILLS_PREFIX "<name>.md using write_file\n"
+    "3. Save to " MIMI_FILE_SKILLS_DIR "/<name>.md using write_file\n"
     "4. The skill will be available after the next conversation\n\n"
     "## Best practices\n"
     "- Keep skills concise\n"
@@ -57,14 +57,14 @@ static const SkillInfo s_builtins[] = {
 MimiSkills::MimiSkills() {}
 
 void MimiSkills::installBuiltin(const char* filename, const char* content) {
-    String path = String(MIMI_SKILLS_PREFIX) + filename + ".md";
+    String path = String(MIMI_FILE_SKILLS_DIR) + "/" + filename + ".md";
 
     if (_file_system->ExistsFile(path.c_str())) {
         MIMI_LOGD(TAG, __LINE__, "Skill exists: %s", path.c_str());
         return;
     }
 
-    File f = _file_system->OpenFile(path.c_str(), "w");
+    File f = _file_system->OpenFile(path.c_str(), FILE_WRITE);
     if (!f) {
         MIMI_LOGE(TAG, __LINE__, "Cannot write skill: %s", path.c_str());
         return;
@@ -72,26 +72,26 @@ void MimiSkills::installBuiltin(const char* filename, const char* content) {
 
     f.print(content);
     f.close();
-    MIMI_LOGI(TAG, "Installed built-in skill: %s", path.c_str());
+    MIMI_LOGI(TAG, "Skill file %s saved.", path.c_str()); /* file: /skill/xxx.md */
 }
 
 void MimiSkills::installSkill(const SkillInfo* info) {
-    String path = String(MIMI_SKILLS_PREFIX) + info->filename + ".md";
+    String path = String(MIMI_FILE_SKILLS_DIR) + "/" + info->filename + ".md";
 
     if (_file_system->ExistsFile(path.c_str())) {
         MIMI_LOGD(TAG, __LINE__, "Skill exists: %s", path.c_str());
         return;
     }
 
-    File f = _file_system->OpenFile(path.c_str(), "w");
+    File f = _file_system->OpenFile(path.c_str(), FILE_WRITE);
     if (!f) {
-        MIMI_LOGE(TAG, __LINE__, "Cannot write skill: %s", path.c_str());
+        MIMI_LOGE(TAG, __LINE__, "Cannot write skill: %s", path.c_str()); /* file: /skill/xxx.md */
         return;
     }
 
     f.print(info->content);
     f.close();
-    MIMI_LOGI(TAG, "Installed skill: %s", path.c_str());
+    MIMI_LOGI(TAG, "Skill file %s saved.", path.c_str());
 }
 
 bool MimiSkills::begin(FileSystem *file_system) {
@@ -109,7 +109,7 @@ bool MimiSkills::begin(FileSystem *file_system) {
 
 size_t MimiSkills::buildSummary(char* buf, size_t size) {
     // Enumerate files matching the skills prefix
-    File skill_fd = _file_system->OpenFile(MIMI_SKILLS_PREFIX);
+    File skill_fd = _file_system->OpenFile(MIMI_FILE_SKILLS_DIR);
     if (!skill_fd) {
         MIMI_LOGW(TAG, "Cannot open skills folder.");
         buf[0] = '\0';
@@ -119,7 +119,7 @@ size_t MimiSkills::buildSummary(char* buf, size_t size) {
     size_t off = 0;
     File entry = skill_fd.openNextFile();
     if (!entry) {
-        MIMI_LOGE(TAG, __LINE__, "No files in %s.", MIMI_SKILLS_PREFIX);
+        MIMI_LOGE(TAG, __LINE__, "No files in %s.", MIMI_FILE_SKILLS_DIR);
         return 0;
     }
 
@@ -131,7 +131,7 @@ size_t MimiSkills::buildSummary(char* buf, size_t size) {
             continue;
         }
 
-        MIMI_LOGD(TAG, __LINE__, "read skill file %s%s", MIMI_SKILLS_PREFIX, entry.name());
+        MIMI_LOGD(TAG, __LINE__, "Read skill file %s/%s", MIMI_FILE_SKILLS_DIR, entry.name());
 
         // Read first line for title
         String firstLine = entry.readStringUntil('\n');
@@ -150,8 +150,8 @@ size_t MimiSkills::buildSummary(char* buf, size_t size) {
         }
 
         off += snprintf(buf + off, size - off,
-            "- **%s**: %s (read with: read_file %s%s)\n",
-            title.c_str(), desc.c_str(), MIMI_SKILLS_PREFIX, entry.name());
+            "- **%s**: %s (read with: Read_file %s/%s)\n",
+            title.c_str(), desc.c_str(), MIMI_FILE_SKILLS_DIR, entry.name());
 
         entry = skill_fd.openNextFile();
     }

@@ -22,7 +22,7 @@ bool MimiHeartbeat::begin(MimiBus* bus, FileSystem *file_system) {
 }
 
 bool MimiHeartbeat::hasTasks() {
-    File f = _file_system->OpenFile(MIMI_HEARTBEAT_FILE, "r");
+    File f = _file_system->OpenFile(MIMI_HEARTBEAT_FILE, FILE_READ);
     if (!f) return false;
 
     bool found = false;

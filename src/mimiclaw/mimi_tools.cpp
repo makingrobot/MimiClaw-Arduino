@@ -190,7 +190,7 @@ bool tool_read_file_execute(const char* input_json, char* output, size_t output_
     }
 
     FileSystem *file_system = Board::GetInstance().GetFileSystem();
-    File f = file_system->OpenFile(path, "r");
+    File f = file_system->OpenFile(path, FILE_READ);
     if (!f) {
         snprintf(output, output_size, "Error: file not found: %s", path);
         return false;
@@ -226,7 +226,7 @@ bool tool_write_file_execute(const char* input_json, char* output, size_t output
     }
 
     FileSystem *file_system = Board::GetInstance().GetFileSystem();
-    File f = file_system->OpenFile(path, "w");
+    File f = file_system->OpenFile(path, FILE_WRITE);
     if (!f) {
         snprintf(output, output_size, "Error: cannot open file: %s", path);
         return false;
@@ -261,7 +261,7 @@ bool tool_edit_file_execute(const char* input_json, char* output, size_t output_
     }
 
     FileSystem *file_system = Board::GetInstance().GetFileSystem();
-    File f = file_system->OpenFile(path, "r");
+    File f = file_system->OpenFile(path, FILE_READ);
     if (!f) {
         snprintf(output, output_size, "Error: file not found: %s", path);
         return false;
@@ -278,7 +278,7 @@ bool tool_edit_file_execute(const char* input_json, char* output, size_t output_
 
     String result = fileContent.substring(0, pos) + String(newStr) + fileContent.substring(pos + strlen(oldStr));
 
-    f = file_system->OpenFile(path, "w");
+    f = file_system->OpenFile(path, FILE_WRITE);
     if (!f) {
         snprintf(output, output_size, "Error: cannot write file: %s", path);
         return false;
