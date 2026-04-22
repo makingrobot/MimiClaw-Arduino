@@ -3,10 +3,11 @@
 #include "mimi_config.h"
 #include "esp_heap_caps.h"
 
+#include <vector>
 #include <Arduino.h>
-#include <Preferences.h>
 #include "mimi_application.h"
 #include "mimi_bus.h"
+#include "mimi_prefs.h"
 #include "mimi_websearch.h"
 #include "src/framework/board/board.h"
 #include "src/framework/file/file_system.h"
@@ -448,13 +449,10 @@ static void _print_config(const char *label, const char *ns, const char *key, bo
     String source = "not set";
     String value = "(empty)";
 
-    Preferences prefs;
-    if (prefs.begin(ns, true)) {
-        if (prefs.isKey(key)) {
-            value = prefs.getString(key, "");
-            source = "NVS";
-        }
-        prefs.end();
+    MimiApplication *app = (MimiApplication *)(&Application::GetInstance());
+    if (app->prefs().containsKey(ns, key)) {
+        value = app->prefs().getString(ns, key, "");
+        source = "NVS";
     }
 
     if (mask && value.length() > 6 && strcmp(value.c_str(), "(empty)") != 0) {
@@ -470,14 +468,11 @@ static void _print_config_u16(const char *label, const char *ns, const char *key
     String source = "not set";
     String value = "(empty)";
 
-    Preferences prefs;
-    if (prefs.begin(ns, true)) {
-        if (prefs.isKey(key)) {
-            uint16_t nvs_val = prefs.getUShort(key, 0);
-            value = String(nvs_val);
-            source = "NVS";
-        }
-        prefs.end();
+    MimiApplication *app = (MimiApplication *)(&Application::GetInstance());
+    if (app->prefs().containsKey(ns, key)) {
+        uint16_t nvs_val = app->prefs().getUInt(ns, key, 0);
+        value = String(nvs_val);
+        source = "NVS";
     }
 
     printf("  %-14s: %s  [%s]\n", label, value.c_str(), source.c_str());
@@ -512,17 +507,11 @@ static int cmd_config_show(int argc, char **argv)
  */
 static int cmd_config_reset(int argc, char **argv)
 {
-    const char *namespaces[] = {
-        MIMI_PREF_WIFI,MIMI_PREF_TG,MIMI_PREF_LLM,MIMI_PREF_PROXY,MIMI_PREF_SEARCH,MIMI_PREF_FS
-    };
-    for (int i = 0; i < sizeof(namespaces); i++) {
-        Preferences prefs;
-        if (prefs.begin(namespaces[i], false)) {
-            prefs.clear();
-            prefs.end();
-        }
-    }
+    MimiApplication *app = (MimiApplication *)(&Application::GetInstance());
+    app->prefs().clearAll();
+
     printf("All NVS config cleared. Build-time defaults will be used on restart.\n");
+    MIMI_LOGW(TAG, "All NVS config cleared. Build-time defaults will be used on restart.");
     return 0;
 }
 

@@ -225,6 +225,9 @@
 #define MIMI_CHAN_FEISHU            "feishu"
 
 // ── Preferences namespaces ─────────────────────────────────────
+#ifndef MIMI_PREF_USE_NVS
+#define MIMI_PREF_USE_NVS           1
+#endif
 #define MIMI_PREF_WIFI              "wifi_config"
 #define MIMI_PREF_TG                "tg_config"
 #define MIMI_PREF_LLM               "llm_config"

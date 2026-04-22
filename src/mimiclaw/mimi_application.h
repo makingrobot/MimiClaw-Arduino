@@ -13,6 +13,7 @@
 
 #include <Arduino.h>
 #include "mimi_config.h"
+#include "mimi_prefs.h"
 #include "mimi_bus.h"
 #include "mimi_wifi.h"
 #include "mimi_llm.h"
@@ -100,7 +101,10 @@ public:
     
     MimiWebsearch& websearch() { return _websearch; }
 
+    MimiPrefs& prefs() { return _prefs; }
+    
 private:
+    MimiPrefs _prefs;
     MimiBus _bus;
     MimiWiFi _wifi;
     MimiLLM _llm;

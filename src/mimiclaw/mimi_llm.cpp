@@ -26,14 +26,14 @@ MimiLLM::MimiLLM() : _proxy(nullptr) {
     memset(_provider, 0, sizeof(_provider));
 }
 
-bool MimiLLM::begin() {
+bool MimiLLM::begin(MimiPrefs* prefs) {
+    _prefs = prefs;
+
     // Load from Preferences
-    _prefs.begin(MIMI_PREF_LLM, true);
-    String key = _prefs.getString(MIMI_PREF_LLM_APIKEY, MIMI_LLM_API_KEY);
-    String model = _prefs.getString(MIMI_PREF_LLM_MODEL, MIMI_LLM_MODEL);
-    String provider = _prefs.getString(MIMI_PREF_LLM_PROVIDER, MIMI_LLM_PROVIDER);
-    String url = _prefs.getString(MIMI_PREF_LLM_APIURL, MIMI_LLM_API_URL);
-    _prefs.end();
+    String key = _prefs->getString(MIMI_PREF_LLM, MIMI_PREF_LLM_APIKEY, MIMI_LLM_API_KEY);
+    String model = _prefs->getString(MIMI_PREF_LLM, MIMI_PREF_LLM_MODEL, MIMI_LLM_MODEL);
+    String provider = _prefs->getString(MIMI_PREF_LLM, MIMI_PREF_LLM_PROVIDER, MIMI_LLM_PROVIDER);
+    String url = _prefs->getString(MIMI_PREF_LLM, MIMI_PREF_LLM_APIURL, MIMI_LLM_API_URL);
 
     if (!key.isEmpty()) strncpy(_apiKey, key.c_str(), sizeof(_apiKey) - 1);
     if (!model.isEmpty()) strncpy(_model, model.c_str(), sizeof(_model) - 1);
@@ -50,33 +50,29 @@ bool MimiLLM::begin() {
 
 void MimiLLM::setApiKey(const char* key) {
     strncpy(_apiKey, key, sizeof(_apiKey) - 1);
-    _prefs.begin(MIMI_PREF_LLM, false);
-    _prefs.putString(MIMI_PREF_LLM_APIKEY, key);
-    _prefs.end();
+    _prefs->putString(MIMI_PREF_LLM, MIMI_PREF_LLM_APIKEY, key);
+    _prefs->update();
     MIMI_LOGI(TAG, "API key saved");
 }
 
 void MimiLLM::setModel(const char* model) {
     strncpy(_model, model, sizeof(_model) - 1);
-    _prefs.begin(MIMI_PREF_LLM, false);
-    _prefs.putString(MIMI_PREF_LLM_MODEL, model);
-    _prefs.end();
+    _prefs->putString(MIMI_PREF_LLM, MIMI_PREF_LLM_MODEL, model);
+    _prefs->update();
     MIMI_LOGI(TAG, "Model set to: %s", _model);
 }
 
 void MimiLLM::setProvider(const char* provider) {
     strncpy(_provider, provider, sizeof(_provider) - 1);
-    _prefs.begin(MIMI_PREF_LLM, false);
-    _prefs.putString(MIMI_PREF_LLM_PROVIDER, provider);
-    _prefs.end();
+    _prefs->putString(MIMI_PREF_LLM, MIMI_PREF_LLM_PROVIDER, provider);
+    _prefs->update();
     MIMI_LOGI(TAG, "Provider set to: %s", _provider);
 }
 
 void MimiLLM::setApiUrl(const char* url) {
     strncpy(_apiUrl, url, sizeof(_apiUrl) - 1);
-    _prefs.begin(MIMI_PREF_LLM, false);
-    _prefs.putString(MIMI_PREF_LLM_APIURL, url);
-    _prefs.end();
+    _prefs->putString(MIMI_PREF_LLM, MIMI_PREF_LLM_APIURL, url);
+    _prefs->update();
     MIMI_LOGI(TAG, "API URL set to: %s", _apiUrl);
 }
 

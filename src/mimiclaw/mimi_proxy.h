@@ -9,12 +9,12 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
-#include <Preferences.h>
+#include "mimi_prefs.h"
 
 class MimiProxy {
 public:
     MimiProxy();
-    bool begin();
+    bool begin(MimiPrefs *prefs);
     bool isEnabled();
 
     void set(const char* host, uint16_t port, const char* type = "http");
@@ -35,7 +35,7 @@ private:
     String _host;
     uint16_t _port;
     String _type;   // "http" or "socks5"
-    Preferences _prefs;
+    MimiPrefs *_prefs;
 
     bool connectTunnel(WiFiClient& sock, const char* targetHost, int targetPort, int timeout_ms);
     bool socks5Handshake(WiFiClient& sock, const char* targetHost, int targetPort, int timeout_ms);

@@ -8,6 +8,7 @@
 
 #include <Arduino.h>
 #include "mimi_bus.h"
+#include "mimi_prefs.h"
 #include "esp_websocket_client.h"
 #include <ArduinoJson.h>
 #include "feishu_pack.h"
@@ -17,7 +18,7 @@ class MimiProxy; // forward
 class MimiFeishu {
 public:
     MimiFeishu();
-    bool begin(MimiBus* bus);
+    bool begin(MimiBus* bus, MimiPrefs *prefs);
     bool start();
 
     void setCredentials(const char *app_id, const char *app_secret);
@@ -33,6 +34,7 @@ private:
     String _app_secret;
 
     MimiBus* _bus = nullptr;
+    MimiPrefs* _prefs = nullptr;
     MimiProxy* _proxy = nullptr;
     TaskHandle_t _taskHandle = nullptr;
 

@@ -3,7 +3,6 @@
 #include "mimi_cron.h"
 #include <ArduinoJson.h>
 #include <time.h>
-#include <Preferences.h>
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
 #include "arduino_json_psram.h"

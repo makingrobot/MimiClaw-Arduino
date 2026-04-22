@@ -4,7 +4,6 @@
 #include <ArduinoJson.h>
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
-#include <Preferences.h>
 #include "arduino_json_psram.h"
 #include "mimi_application.h"
 
@@ -29,39 +28,41 @@ MimiWebsearch::MimiWebsearch() {
     _tools.push_back(&ws);
 }
 
-void MimiWebsearch::init() {
-    Preferences prefs;
-    prefs.begin(MIMI_PREF_SEARCH, true);
-    _provider = prefs.getString(MIMI_PREF_SEARCH_PROVIDER, MIMI_SEARCH_PROVIDER);
-    _brave_key = prefs.getString(MIMI_PREF_SEARCH_BRAVEKEY, MIMI_BRAVE_KEY);
-    _tavily_key = prefs.getString(MIMI_PREF_SEARCH_TAVILYKEY, MIMI_TAVILY_KEY);
-    prefs.end();
+void MimiWebsearch::init(MimiPrefs* prefs) {
+    _prefs = prefs;
+    _provider = _prefs->getString(MIMI_PREF_SEARCH, MIMI_PREF_SEARCH_PROVIDER, MIMI_SEARCH_PROVIDER);
+    _brave_key = _prefs->getString(MIMI_PREF_SEARCH, MIMI_PREF_SEARCH_BRAVEKEY, MIMI_BRAVE_KEY);
+    _tavily_key = _prefs->getString(MIMI_PREF_SEARCH, MIMI_PREF_SEARCH_TAVILYKEY, MIMI_TAVILY_KEY);
+
+    if (_provider.isEmpty()) {
+        MIMI_LOGI(TAG, "Websearch provider not set.");
+    } else {
+        if (strcmp("tavily", _provider.c_str()) == 0) {
+            MIMI_LOGI(TAG, _tavily_key.isEmpty() ? "Tavily key not set." : "Using tavily websearch.");
+        } else if (strcmp("brave", _provider.c_str()) == 0) {
+            MIMI_LOGI(TAG, _brave_key.isEmpty() ? "Brave key not set." : "Using brave websearch.");
+        }
+    }
 }
 
 void MimiWebsearch::setBraveKey(const char* key) {
     _brave_key = String(key);
-    Preferences prefs;
-    prefs.begin(MIMI_PREF_SEARCH, false);
-    prefs.putString(MIMI_PREF_SEARCH_BRAVEKEY, _brave_key.c_str());
-    prefs.end();
+    _prefs->putString(MIMI_PREF_SEARCH, MIMI_PREF_SEARCH_BRAVEKEY, _brave_key.c_str());
+    _prefs->update();
     MIMI_LOGI(TAG, "Brave key saved");
 }
 
 void MimiWebsearch::setTavilyKey(const char* key) {
     _tavily_key = String(key);
-    Preferences prefs;
-    prefs.begin(MIMI_PREF_SEARCH, false);
-    prefs.putString(MIMI_PREF_SEARCH_TAVILYKEY, _tavily_key.c_str());
-    prefs.end();
+    _prefs->putString(MIMI_PREF_SEARCH, MIMI_PREF_SEARCH_TAVILYKEY, _tavily_key.c_str());
+    _prefs->update();
     MIMI_LOGI(TAG, "Tavily key saved");
 }
 
 void MimiWebsearch::setProvider(const char* provider) {
     _provider = String(provider);
-    Preferences prefs;
-    prefs.begin(MIMI_PREF_SEARCH, false);
-    prefs.putString(MIMI_PREF_SEARCH_PROVIDER, _provider.c_str());
-    prefs.end();
+    _prefs->putString(MIMI_PREF_SEARCH, MIMI_PREF_SEARCH_PROVIDER, _provider.c_str());
+    _prefs->update();
     MIMI_LOGI(TAG, "Provider saved");
 }
 

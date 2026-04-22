@@ -10,7 +10,8 @@ MimiWiFi::MimiWiFi() : _connected(false), _retryCount(0) {
     _ipStr = "0.0.0.0";
 }
 
-bool MimiWiFi::begin() {
+bool MimiWiFi::begin(MimiPrefs* prefs) {
+    _prefs = prefs;
     WiFi.mode(WIFI_STA);
     WiFi.onEvent(eventHandler);
     MIMI_LOGI(TAG, "WiFi manager initialized");
@@ -21,20 +22,17 @@ void MimiWiFi::setCredentials(const char* ssid, const char* pass) {
     _ssid = ssid;
     _pass = pass;
     // Also save to Preferences
-    _prefs.begin(MIMI_PREF_WIFI, false);
-    _prefs.putString(MIMI_PREF_WIFI_SSID, ssid);
-    _prefs.putString(MIMI_PREF_WIFI_PASS, pass);
-    _prefs.end();
+    _prefs->putString(MIMI_PREF_WIFI, MIMI_PREF_WIFI_SSID, ssid);
+    _prefs->putString(MIMI_PREF_WIFI, MIMI_PREF_WIFI_PASS, pass);
+    _prefs->update();
     MIMI_LOGI(TAG, "WiFi credentials saved for SSID: %s", ssid);
 }
 
 bool MimiWiFi::start() {
     // Load from Preferences if not set
     if (_ssid.isEmpty()) {
-        _prefs.begin(MIMI_PREF_WIFI, true);
-        _ssid = _prefs.getString(MIMI_PREF_WIFI_SSID, MIMI_WIFI_SSID);
-        _pass = _prefs.getString(MIMI_PREF_WIFI_PASS, MIMI_WIFI_PASS);
-        _prefs.end();
+        _ssid = _prefs->getString(MIMI_PREF_WIFI, MIMI_PREF_WIFI_SSID, MIMI_WIFI_SSID);
+        _pass = _prefs->getString(MIMI_PREF_WIFI, MIMI_PREF_WIFI_PASS, MIMI_WIFI_PASS);
     }
 
     if (_ssid.isEmpty()) {

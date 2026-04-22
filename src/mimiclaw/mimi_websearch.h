@@ -9,11 +9,12 @@
 #include <vector>
 #include <Arduino.h>
 #include "mimi_tools.h"
+#include "mimi_prefs.h"
 
 class MimiWebsearch {
 public:
     MimiWebsearch();
-    void init();
+    void init(MimiPrefs *prefs);
     void setBraveKey(const char* key);
     void setTavilyKey(const char* key);
     void setProvider(const char* provider);
@@ -33,6 +34,7 @@ private:
     String _brave_key;
     String _tavily_key;
 
+    MimiPrefs *_prefs;
     std::vector<const MimiTool*> _tools;
 };
 

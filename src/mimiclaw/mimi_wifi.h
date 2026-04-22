@@ -8,12 +8,12 @@
 
 #include <Arduino.h>
 #include <WiFi.h>
-#include <Preferences.h>
+#include "mimi_prefs.h"
 
 class MimiWiFi {
 public:
     MimiWiFi();
-    bool begin();
+    bool begin(MimiPrefs* prefs);
     bool start();
     bool waitConnected(uint32_t timeout_ms = 30000);
     bool isConnected();
@@ -27,7 +27,7 @@ private:
     String _pass;
     String _ipStr;
     bool _connected;
-    Preferences _prefs;
+    MimiPrefs* _prefs;
 
     static void eventHandler(WiFiEvent_t event, WiFiEventInfo_t info);
     static MimiWiFi* _instance;

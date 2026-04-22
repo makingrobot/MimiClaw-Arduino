@@ -4,7 +4,6 @@
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
-#include <Preferences.h>
 #include "arduino_json_psram.h"
 
 static const char* TAG MIMI_TAG_UNUSED = "telegram";
@@ -14,22 +13,19 @@ MimiTelegram::MimiTelegram() {
     memset(_seenKeys, 0, sizeof(_seenKeys));
 }
 
-bool MimiTelegram::begin(MimiBus* bus) {
+bool MimiTelegram::begin(MimiBus* bus, MimiPrefs* prefs) {
     _bus = bus;
+    _prefs = prefs;
 
     // Load token from Preferences
-    Preferences prefs;
-    if (prefs.begin(MIMI_PREF_TG, true)) {
-        String tok = prefs.getString(MIMI_PREF_TG_TOKEN, MIMI_TG_TOKEN);
-        if (tok.length() > 0) {
-            strncpy(_token, tok.c_str(), sizeof(_token) - 1);
-        }
-        _updateOffset = prefs.getLong64("offset", 0);
-        if (_updateOffset > 0) {
-            _lastSavedOffset = _updateOffset;
-            MIMI_LOGI(TAG, "Loaded Telegram offset: %lld", (long long)_updateOffset);
-        }
-        prefs.end();
+    String tok = _prefs->getString(MIMI_PREF_TG, MIMI_PREF_TG_TOKEN, MIMI_TG_TOKEN);
+    if (tok.length() > 0) {
+        strncpy(_token, tok.c_str(), sizeof(_token) - 1);
+    }
+    _updateOffset = _prefs->getLong64(MIMI_PREF_TG, "offset", 0);
+    if (_updateOffset > 0) {
+        _lastSavedOffset = _updateOffset;
+        MIMI_LOGI(TAG, "Loaded Telegram offset: %lld", (long long)_updateOffset);
     }
 
     if (_token[0]) {
@@ -42,11 +38,8 @@ bool MimiTelegram::begin(MimiBus* bus) {
 
 void MimiTelegram::setToken(const char* token) {
     strncpy(_token, token, sizeof(_token) - 1);
-    Preferences prefs;
-    if (prefs.begin(MIMI_PREF_TG, false)) {
-        prefs.putString(MIMI_PREF_TG_TOKEN, token);
-        prefs.end();
-    }
+    _prefs->putString(MIMI_PREF_TG, MIMI_PREF_TG_TOKEN, token);
+    _prefs->update();
     MIMI_LOGI(TAG, "Telegram bot token saved");
 }
 
@@ -94,21 +87,14 @@ void MimiTelegram::saveOffset(bool force) {
     }
     if (!should) return;
 
-    Preferences prefs;
-    if (prefs.begin(MIMI_PREF_TG, false)) {
-        prefs.putLong64("offset", _updateOffset);
-        prefs.end();
-        _lastSavedOffset = _updateOffset;
-        _lastOffsetSaveMs = now;
-    }
+    _prefs->putLong64(MIMI_PREF_TG, "offset", _updateOffset);
+    _prefs->update();
+    _lastSavedOffset = _updateOffset;
+    _lastOffsetSaveMs = now;
 }
 
 void MimiTelegram::loadOffset() {
-    Preferences prefs;
-    if (prefs.begin(MIMI_PREF_TG, true)) {
-        _updateOffset = prefs.getLong64("offset", 0);
-        prefs.end();
-    }
+    _updateOffset = _prefs->getLong64(MIMI_PREF_TG, "offset", 0);
 }
 
 String MimiTelegram::apiCall(const char* method, const char* postData) {

@@ -60,6 +60,11 @@ bool MimiApplication::OnInit() {
 #endif
 
     // Initialize subsystems
+    if (!_prefs.begin(file_system)) {
+        MIMI_LOGE(TAG, __LINE__, "Preferences init failed");
+        return false;
+    }
+
     if (!_bus.begin()) {
         MIMI_LOGE(TAG, __LINE__, "Bus init failed");
         return false;
@@ -80,29 +85,34 @@ bool MimiApplication::OnInit() {
         return false;
     }
 
-    if (!_wifi.begin()) {
+    if (!_wifi.begin(&_prefs)) {
         MIMI_LOGE(TAG, __LINE__, "WiFi init failed");
         return false;
     }
 
-    if (!_proxy.begin()) {
+    if (!_onboard.begin(&_prefs)) {
+        MIMI_LOGE(TAG, __LINE__, "Onboard init failed");
+        return false;
+    }
+
+    if (!_proxy.begin(&_prefs)) {
         MIMI_LOGE(TAG, __LINE__, "Proxy init failed");
         return false;
     }
 
-    if (!_telegram.begin(&_bus)) {
+    if (!_telegram.begin(&_bus, &_prefs)) {
         MIMI_LOGE(TAG, __LINE__, "Telegram init failed");
         return false;
     }
     _telegram.setProxy(&_proxy);
 
-    if (!_feishu.begin(&_bus)) {
+    if (!_feishu.begin(&_bus, &_prefs)) {
         MIMI_LOGE(TAG, __LINE__, "Feishu init failed");
         return false;
     }
     _feishu.setProxy(&_proxy);
 
-    if (!_llm.begin()) {
+    if (!_llm.begin(&_prefs)) {
         MIMI_LOGE(TAG, __LINE__, "LLM init failed");
         return false;
     }
@@ -138,7 +148,7 @@ bool MimiApplication::OnInit() {
         return false;
     }
 
-    _websearch.init();
+    _websearch.init(&_prefs);
     
     registerTools();
     installSkills();

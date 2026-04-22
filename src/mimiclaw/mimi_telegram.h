@@ -8,13 +8,14 @@
 
 #include <Arduino.h>
 #include "mimi_bus.h"
+#include "mimi_prefs.h"
 
 class MimiProxy; // forward
 
 class MimiTelegram {
 public:
     MimiTelegram();
-    bool begin(MimiBus* bus);
+    bool begin(MimiBus* bus, MimiPrefs* prefs);
     bool start();
     void stop();
 
@@ -25,6 +26,7 @@ public:
 
 private:
     MimiBus* _bus = nullptr;
+    MimiPrefs* _prefs = nullptr;
     MimiProxy* _proxy = nullptr;
     TaskHandle_t _taskHandle = nullptr;
 

@@ -11,7 +11,6 @@
 #include "esp_timer.h"
 #include "esp_event.h"
 
-#include <Preferences.h>
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
@@ -555,17 +554,14 @@ void MimiFeishu::handleMessage(const JsonObject& event_obj)
 
 /* ── Public API ────────────────────────────────────────────── */
 
-bool MimiFeishu::begin(MimiBus *bus)
+bool MimiFeishu::begin(MimiBus *bus, MimiPrefs *prefs)
 {
     _bus = bus;
+    _prefs = prefs;
 
     // Load token from Preferences
-    Preferences prefs;
-    if (prefs.begin(MIMI_PREF_FS, true)) {
-        _app_id = prefs.getString(MIMI_PREF_FS_APPID, "");
-        _app_secret = prefs.getString(MIMI_PREF_FS_APPSECRET, MIMI_FEISHU_APP_SECRET);
-        prefs.end();
-    }
+    _app_id = prefs->getString(MIMI_PREF_FS, MIMI_PREF_FS_APPID, "");
+    _app_secret = prefs->getString(MIMI_PREF_FS, MIMI_PREF_FS_APPSECRET, "");
 
     if (_app_id.isEmpty()) _app_id = MIMI_FEISHU_APP_ID;
     if (_app_secret.isEmpty()) _app_secret = MIMI_FEISHU_APP_SECRET;
@@ -806,11 +802,9 @@ void MimiFeishu::setCredentials(const char *app_id, const char *app_secret)
     _app_id = String(app_id);
     _app_secret = String(app_secret);
 
-    Preferences prefs;
-    if (prefs.begin(MIMI_PREF_FS, false)) {
-        prefs.putString(MIMI_PREF_FS_APPID, app_id);
-        prefs.putString(MIMI_PREF_FS_APPSECRET, app_secret);
-        prefs.end();
-    }
+    _prefs->putString(MIMI_PREF_FS, MIMI_PREF_FS_APPID, app_id);
+    _prefs->putString(MIMI_PREF_FS, MIMI_PREF_FS_APPSECRET, app_secret);
+    _prefs->update();
+    
     MIMI_LOGI(TAG, "credentials saved");
 }

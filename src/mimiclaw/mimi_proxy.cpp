@@ -5,13 +5,12 @@ static const char* TAG MIMI_TAG_UNUSED = "proxy";
 
 MimiProxy::MimiProxy() : _port(0), _type("http") {}
 
-bool MimiProxy::begin() {
+bool MimiProxy::begin(MimiPrefs *prefs) {
+    _prefs = prefs;
     // Load from Preferences
-    _prefs.begin(MIMI_PREF_PROXY, true);
-    _host = _prefs.getString(MIMI_PREF_PROXY_HOST, "");
-    _port = _prefs.getUShort(MIMI_PREF_PROXY_PORT, 0);
-    _type = _prefs.getString(MIMI_PREF_PROXY_TYPE, "http");
-    _prefs.end();
+    _prefs->getString(MIMI_PREF_PROXY, MIMI_PREF_PROXY_HOST, "");
+    _prefs->getUInt(MIMI_PREF_PROXY, MIMI_PREF_PROXY_PORT, 0);
+    _prefs->getString(MIMI_PREF_PROXY, MIMI_PREF_PROXY_TYPE, "http");
 
     if (isEnabled()) {
         MIMI_LOGI(TAG, "Proxy configured: %s:%d (%s)", _host.c_str(), _port, _type.c_str());
@@ -30,19 +29,16 @@ void MimiProxy::set(const char* host, uint16_t port, const char* type) {
     _port = port;
     _type = type;
 
-    _prefs.begin(MIMI_PREF_PROXY, false);
-    _prefs.putString(MIMI_PREF_PROXY_HOST, host);
-    _prefs.putUShort(MIMI_PREF_PROXY_PORT, port);
-    _prefs.putString(MIMI_PREF_PROXY_TYPE, type);
-    _prefs.end();
+    _prefs->putString(MIMI_PREF_PROXY, MIMI_PREF_PROXY_HOST, host);
+    _prefs->putUInt(MIMI_PREF_PROXY, MIMI_PREF_PROXY_PORT, port);
+    _prefs->putString(MIMI_PREF_PROXY, MIMI_PREF_PROXY_TYPE, type);
+    _prefs->update();
 
     MIMI_LOGI(TAG, "Proxy set to %s:%d (%s)", _host.c_str(), _port, _type.c_str());
 }
 
 void MimiProxy::clear() {
-    _prefs.begin(MIMI_PREF_PROXY, false);
-    _prefs.clear();
-    _prefs.end();
+    _prefs->clear(MIMI_PREF_PROXY);
 
     _host = "";
     _port = 0;

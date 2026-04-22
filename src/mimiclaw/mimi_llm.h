@@ -8,8 +8,8 @@
 
 #include <Arduino.h>
 #include <ArduinoJson.h>
-#include <Preferences.h>
 #include "mimi_config.h"
+#include "mimi_prefs.h"
 
 struct LlmToolCall {
     char id[64];
@@ -33,7 +33,7 @@ class MimiProxy; // forward declaration
 class MimiLLM {
 public:
     MimiLLM();
-    bool begin();
+    bool begin(MimiPrefs* prefs);
 
     void setApiKey(const char* key);
     void setModel(const char* model);
@@ -62,7 +62,7 @@ private:
     char _provider[16];
     char _apiUrl[256];
     MimiProxy* _proxy;
-    Preferences _prefs;
+    MimiPrefs* _prefs;
 
     bool isOpenAI();
     const char* apiUrl();
