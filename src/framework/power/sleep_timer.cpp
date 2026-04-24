@@ -14,10 +14,6 @@
 #include <esp_sleep.h>
 #include <esp_pm.h>
 
-#if CONFIG_USE_LVGL==1
-#include "src/libs/esp_lvgl_port/esp_lvgl_port.h"
-#endif
-
 #define TAG "SleepTimer"
 
 SleepTimer::SleepTimer(int seconds_to_light_sleep, int seconds_to_deep_sleep)
@@ -79,15 +75,15 @@ void SleepTimer::CheckSleep() {
                     board.GetDisplay()->UpdateStatusBar(true);
 
 #if CONFIG_USE_LVGL==1
-                    lv_refr_now(nullptr);
-                    lvgl_port_stop();
+                    // lv_refr_now(nullptr);
+                    // lvgl_port_stop();
     
                     // 配置timer唤醒源（30秒后自动唤醒）
                     esp_sleep_enable_timer_wakeup(30 * 1000000);
                     
                     // 进入light sleep模式
-                    esp_light_sleep_start();
-                    lvgl_port_resume();
+                    // esp_light_sleep_start();
+                    // lvgl_port_resume();
 #endif
                     auto wakeup_reason = esp_sleep_get_wakeup_cause();
                     if (wakeup_reason != ESP_SLEEP_WAKEUP_TIMER) {

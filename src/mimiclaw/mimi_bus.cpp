@@ -1,7 +1,8 @@
 #include "mimi_bus.h"
 #include "mimi_config.h"
+#include "mimi_application.h"
 
-static const char* TAG MIMI_TAG_UNUSED = "bus";
+#define TAG "bus"
 
 MimiBus::MimiBus() : _inQueue(nullptr), _outQueue(nullptr) {}
 
@@ -21,6 +22,10 @@ bool MimiBus::pushInbound(const MimiMsg* msg) {
         MIMI_LOGW(TAG, "Inbound queue full, dropping message");
         return false;
     }
+
+    MimiApplication *app = (MimiApplication *)(&Application::GetInstance());
+    app->showMessageOnDisplay("user", msg->content);
+    
     return true;
 }
 

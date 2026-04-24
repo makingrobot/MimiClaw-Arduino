@@ -9,7 +9,6 @@
 static const char* TAG MIMI_TAG_UNUSED = "telegram";
 
 MimiTelegram::MimiTelegram() {
-    memset(_token, 0, sizeof(_token));
     memset(_seenKeys, 0, sizeof(_seenKeys));
 }
 
@@ -18,18 +17,16 @@ bool MimiTelegram::begin(MimiBus* bus, MimiPrefs* prefs) {
     _prefs = prefs;
 
     // Load token from Preferences
-    String tok = _prefs->getString(MIMI_PREF_TG, MIMI_PREF_TG_TOKEN, MIMI_TG_TOKEN);
-    if (tok.length() > 0) {
-        strncpy(_token, tok.c_str(), sizeof(_token) - 1);
-    }
+    _token = _prefs->getString(MIMI_PREF_TG, MIMI_PREF_TG_TOKEN, MIMI_TG_TOKEN);
+
     _updateOffset = _prefs->getLong64(MIMI_PREF_TG, "offset", 0);
     if (_updateOffset > 0) {
         _lastSavedOffset = _updateOffset;
         MIMI_LOGI(TAG, "Loaded Telegram offset: %lld", (long long)_updateOffset);
     }
 
-    if (_token[0]) {
-        MIMI_LOGI(TAG, "Telegram bot token loaded (len=%d)", (int)strlen(_token));
+    if (!_token.isEmpty()) {
+        MIMI_LOGI(TAG, "Telegram bot token loaded (len=%d)", _token.length());
     } else {
         MIMI_LOGW(TAG, "No Telegram bot token configured");
     }
@@ -37,7 +34,7 @@ bool MimiTelegram::begin(MimiBus* bus, MimiPrefs* prefs) {
 }
 
 void MimiTelegram::setToken(const char* token) {
-    strncpy(_token, token, sizeof(_token) - 1);
+    _token = String(token);
     _prefs->putString(MIMI_PREF_TG, MIMI_PREF_TG_TOKEN, token);
     _prefs->update();
     MIMI_LOGI(TAG, "Telegram bot token saved");
@@ -192,18 +189,7 @@ void MimiTelegram::processUpdates(const String& json) {
 
         MIMI_LOGI(TAG, "Message from %s: %.40s...", chatIdStr, text);
 
-        // Push to inbound bus
-        MimiMsg msg;
-        memset(&msg, 0, sizeof(msg));
-        strncpy(msg.channel, MIMI_CHAN_TELEGRAM, sizeof(msg.channel) - 1);
-        strncpy(msg.chat_id, chatIdStr, sizeof(msg.chat_id) - 1);
-        msg.content = strdup(text);
-        if (msg.content) {
-            if (!_bus->pushInbound(&msg)) {
-                MIMI_LOGW(TAG, "Inbound queue full, drop message");
-                free(msg.content);
-            }
-        }
+        onMessage(chatIdStr, text);
     }
 }
 
@@ -228,7 +214,7 @@ bool MimiTelegram::sendChunk(const char* chatId, const char* text, size_t len, b
 }
 
 bool MimiTelegram::sendMessage(const char* chat_id, const char* text) {
-    if (_token[0] == '\0') {
+    if (_token.isEmpty()) {
         MIMI_LOGW(TAG, "Cannot send: no bot token");
         return false;
     }
@@ -267,7 +253,7 @@ void MimiTelegram::pollTask() {
     MIMI_LOGI(TAG, "Telegram polling task started");
 
     while (true) {
-        if (_token[0] == '\0') {
+        if (_token.isEmpty()) {
             MIMI_LOGW(TAG, "No bot token, waiting...");
             vTaskDelay(pdMS_TO_TICKS(60000));
             continue;

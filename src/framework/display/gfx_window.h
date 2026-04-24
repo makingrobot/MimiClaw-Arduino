@@ -10,13 +10,13 @@
 #ifndef TFT_WINDOW_H
 #define TFT_WINDOW_H
 
-#include "src/libs/GFX_Library/Arduino_GFX_Library.h"
+#include <Arduino_GFX_Library.h>
 #include <string>
 #include "window.h"
 
 typedef struct  {
     std::string text = "";
-    uint16_t text_size = 4;
+    uint16_t text_size = 2;
     uint16_t text_color;
     uint16_t text_bg_color;
     uint16_t y_pos = 0;

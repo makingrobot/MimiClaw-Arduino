@@ -7,15 +7,17 @@
 #define MIMI_FEISHU_H
 
 #include <Arduino.h>
+#include <ArduinoJson.h>
+#include "esp_websocket_client.h"
+#include "mimi_config.h"
 #include "mimi_bus.h"
 #include "mimi_prefs.h"
-#include "esp_websocket_client.h"
-#include <ArduinoJson.h>
+#include "mimi_channel.h"
 #include "feishu_pack.h"
 
 class MimiProxy; // forward
 
-class MimiFeishu {
+class MimiFeishu : public MimiChannel {
 public:
     MimiFeishu();
     bool begin(MimiBus* bus, MimiPrefs *prefs);
@@ -24,16 +26,17 @@ public:
     void setCredentials(const char *app_id, const char *app_secret);
     void setProxy(MimiProxy* proxy);
 
-    bool sendMessage(const char* chat_id, const char* text);
+    virtual bool sendMessage(const char* chat_id, const char* text) override;
 
     void setWsConnected(bool connected) { _ws_connected = connected; }
     void handleWsFrame(const uint8_t *buf, size_t len);
 
-private:
-    String _app_id;
-    String _app_secret;
+    virtual String name() const override { MIMI_CHAN_FEISHU; }
 
-    MimiBus* _bus = nullptr;
+private:
+    String _appId;
+    String _appSecret;
+
     MimiPrefs* _prefs = nullptr;
     MimiProxy* _proxy = nullptr;
     TaskHandle_t _taskHandle = nullptr;

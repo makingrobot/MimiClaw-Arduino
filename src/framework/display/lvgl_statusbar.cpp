@@ -17,36 +17,24 @@
 #include "../app/device_state.h"
 #include "../fonts/font_awesome_symbols.h"
 #include "../lang/lang_zh_cn.h"
-#include "../sys/timer.h"
 
 #define TAG "LvglStatusBar"
 
 LvglStatusBar::LvglStatusBar() {
     
-    notification_timer_ = TimerFactory::CreateTimer("StatusBar");
-
 }
 
 LvglStatusBar::~LvglStatusBar() {
-
-    if( notification_timer_!=nullptr ) {
-        notification_timer_->Stop();
-    }
 
     if (status_bar_ != nullptr) {
         lv_obj_del(status_bar_);
     }
     if (network_label_ != nullptr) {
         lv_obj_del(network_label_);
-        lv_obj_del(notification_label_);
         lv_obj_del(status_label_);
         lv_obj_del(mute_label_);
         lv_obj_del(battery_label_);
     }
-    if (time_label_ != nullptr) {
-        lv_obj_del(time_label_);
-    }
-
 }
 
 void LvglStatusBar::SetupUI(lv_obj_t* container, const ThemeColors& theme, const DisplayFonts& fonts) {
@@ -64,37 +52,27 @@ void LvglStatusBar::SetupUI(lv_obj_t* container, const ThemeColors& theme, const
     lv_obj_set_style_pad_left(status_bar_, 2, 0);
     lv_obj_set_style_pad_right(status_bar_, 2, 0);
 
-    time_label_ = lv_label_create(status_bar_);
-    lv_obj_set_flex_grow(time_label_, 1);
-    lv_obj_set_style_text_color(time_label_, theme.text, 0);
-    lv_label_set_text(time_label_, "");
-
-    notification_label_ = lv_label_create(status_bar_);
-    lv_obj_set_flex_grow(notification_label_, 1);
-    lv_obj_set_style_text_align(notification_label_, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_set_style_text_color(notification_label_, theme.text, 0);
-    lv_label_set_text(notification_label_, "");
-    lv_obj_add_flag(notification_label_, LV_OBJ_FLAG_HIDDEN);
-
     status_label_ = lv_label_create(status_bar_);
-    lv_obj_set_flex_grow(status_label_, 1);
-    lv_label_set_long_mode(status_label_, LV_LABEL_LONG_SCROLL_CIRCULAR);
-    lv_obj_set_style_text_align(status_label_, LV_TEXT_ALIGN_CENTER, 0);
+    //lv_obj_set_flex_grow(status_label_, 1);
+    lv_obj_set_style_text_align(status_label_, LV_TEXT_ALIGN_LEFT, 0);
     lv_obj_set_style_text_color(status_label_, theme.text, 0);
     lv_label_set_text(status_label_, Lang::Strings::INITIALIZING);
 
     network_label_ = lv_label_create(status_bar_);
     lv_label_set_text(network_label_, "");
+    lv_obj_set_style_text_align(status_label_, LV_TEXT_ALIGN_RIGHT, 0);
     lv_obj_set_style_text_font(network_label_, fonts.icon_font, 0);
     lv_obj_set_style_text_color(network_label_, theme.text, 0);
 
     mute_label_ = lv_label_create(status_bar_);
     lv_label_set_text(mute_label_, "");
+    lv_obj_set_style_text_align(status_label_, LV_TEXT_ALIGN_RIGHT, 0);
     lv_obj_set_style_text_font(mute_label_, fonts.icon_font, 0);
     lv_obj_set_style_text_color(mute_label_, theme.text, 0);
 
     battery_label_ = lv_label_create(status_bar_);
     lv_label_set_text(battery_label_, "");
+    lv_obj_set_style_text_align(status_label_, LV_TEXT_ALIGN_RIGHT, 0);
     lv_obj_set_style_text_font(battery_label_, fonts.icon_font, 0);
     lv_obj_set_style_text_color(battery_label_, theme.text, 0);
 }
@@ -113,9 +91,6 @@ void LvglStatusBar::SetTheme(const ThemeColors& theme) {
         if (status_label_ != nullptr) {
             lv_obj_set_style_text_color(status_label_, theme.text, 0);
         }
-        if (notification_label_ != nullptr) {
-            lv_obj_set_style_text_color(notification_label_, theme.text, 0);
-        }
         if (mute_label_ != nullptr) {
             lv_obj_set_style_text_color(mute_label_, theme.text, 0);
         }
@@ -127,19 +102,7 @@ void LvglStatusBar::SetTheme(const ThemeColors& theme) {
 }
 
 void LvglStatusBar::ShowNotification(const std::string& notification, int duration_ms) {
-    if (notification_label_ == nullptr) {
-        return;
-    }
-    lv_label_set_text(notification_label_, notification.c_str());
-    lv_obj_clear_flag(notification_label_, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_add_flag(status_label_, LV_OBJ_FLAG_HIDDEN);
 
-    notification_timer_->Start(1000, [this](){ OnNotificationTimer(); }, true);
-}
-
-void LvglStatusBar::OnNotificationTimer() {
-    lv_obj_add_flag(notification_label_, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_clear_flag(status_label_, LV_OBJ_FLAG_HIDDEN);
 }
 
 void LvglStatusBar::SetStatus(const std::string& status) {
@@ -149,7 +112,6 @@ void LvglStatusBar::SetStatus(const std::string& status) {
     status_ = status;
     lv_label_set_text(status_label_, status_.c_str());
     lv_obj_clear_flag(status_label_, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_add_flag(notification_label_, LV_OBJ_FLAG_HIDDEN);
 }
 
 void LvglStatusBar::Update(bool update_all) {
@@ -175,29 +137,6 @@ void LvglStatusBar::Update(bool update_all) {
 #endif //CONFIG_USE_AUDIO
 
     static int seconds_counter = 0;
-
-    // Update time
-    // Time* time = board.GetTime();
-    // if (time != nullptr) {
-    //     time->Update();
-    //     lv_label_set_text(time_label_, time->GetHourMinute().c_str());
-    // }
-    // if (last_status_update_time_ + std::chrono::seconds(10) < std::chrono::system_clock::now()) {
-    //     // Set status to clock "HH:MM"
-    //     time_t now = time(NULL);
-    //     struct tm* tm = localtime(&now);
-    //     // Check if the we have already set the time
-    //     if (tm->tm_year >= 2025 - 1900) {
-    //         char time_str[16];
-    //         strftime(time_str, sizeof(time_str), "%H:%M  ", tm);
-    //         SetStatus(time_str);
-    //     } else {
-    //         // 每 60 秒输出一次
-    //         if (seconds_counter++ % 60 == 0) {
-    //             Log::Warn( TAG, "System time is not set, tm_year: %d", tm->tm_year);
-    //         }
-    //     }
-    // }
 
     // 更新电池图标
     int battery_level;

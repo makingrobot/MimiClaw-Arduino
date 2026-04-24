@@ -94,9 +94,6 @@ public:
     virtual Time* GetTime() { return nullptr; }
 
     virtual Display* GetDisplay();
-#if CONFIG_USE_LVGL==1
-    virtual void SetDisplay(Display *display) = 0;
-#endif
 
 #if CONFIG_USE_AUDIO==1
     virtual AudioCodec* GetAudioCodec() { return nullptr; }

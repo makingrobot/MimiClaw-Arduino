@@ -10,8 +10,8 @@
 #ifndef _GFX_DISPLAY_H
 #define _GFX_DISPLAY_H
 
+#include <Arduino_GFX_Library.h>
 #include "display.h"
-#include "src/libs/GFX_Library/Arduino_GFX_Library.h"
 #include "gfx_window.h"
 
 class GfxDisplay : public Display {

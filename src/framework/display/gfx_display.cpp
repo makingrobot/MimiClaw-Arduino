@@ -36,11 +36,6 @@ void GfxDisplay::Unlock() {
 void GfxDisplay::Init() {
     Log::Info(TAG, "Init ......");
 
-    if (!driver_->begin()) {
-        Log::Error(TAG, "gfx-begin() failed!");
-        return;
-    }
-
     if (window_ == nullptr) {
         window_ = new GfxWindow();
     }

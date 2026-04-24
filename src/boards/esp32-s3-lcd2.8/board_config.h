@@ -22,10 +22,8 @@
 #define DISPLAY_MOSI_PIN                    GPIO_NUM_11
 #define DISPLAY_MISO_PIN                    GPIO_NUM_13
 #define DISPLAY_RST_PIN                     GPIO_NUM_NC
-#define DISPLAY_LED_PIN                     GPIO_NUM_46
+#define DISPLAY_LED_PIN                     GPIO_NUM_45
 
-#define DISPLAY_WIDTH                       240
-#define DISPLAY_HEIGHT                      320
 #define DISPLAY_MIRROR_X                    true
 #define DISPLAY_MIRROR_Y                    false
 #define DISPLAY_SWAP_XY                     false
@@ -41,6 +39,7 @@
 #define TOUCH_SDA_PIN                       GPIO_NUM_15
 #define TOUCH_RST_PIN                       GPIO_NUM_18
 #define TOUCH_INT_PIN                       GPIO_NUM_17
+#define TOUCH_FT6336_ADDR                   0x38
 
 // 音频
 #define AUDIO_I2S_MCLK_PIN                  GPIO_NUM_4

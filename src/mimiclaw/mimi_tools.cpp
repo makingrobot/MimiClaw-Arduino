@@ -275,7 +275,7 @@ bool tool_edit_file_execute(const char* input_json, char* output, size_t output_
         return false;
     }
 
-    String result = fileContent.substring(0, pos) + String(newStr) + fileContent.substring(pos + strlen(oldStr));
+    String result = fileContent.substring(0, pos).concat(newStr) + fileContent.substring(pos + strlen(oldStr));
 
     f = file_system->OpenFile(path, FILE_WRITE);
     if (!f) {

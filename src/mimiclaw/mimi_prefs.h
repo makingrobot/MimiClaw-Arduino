@@ -6,7 +6,6 @@
 #ifndef MIMI_PREFS_H
 #define MIMI_PREFS_H
 
-#include <string>
 #include <map>
 #include <Arduino.h>
 #include <ArduinoJson.h>
@@ -35,7 +34,7 @@ public:
 private:
     FileSystem *_filesystem;
     JsonDocument _prefsDoc;
-    std::map<std::string, std::string> _prefsMap;
+    std::map<String, String> _prefsMap;
 };
 
 #endif

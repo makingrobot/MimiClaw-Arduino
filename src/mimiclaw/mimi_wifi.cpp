@@ -19,8 +19,8 @@ bool MimiWiFi::begin(MimiPrefs* prefs) {
 }
 
 void MimiWiFi::setCredentials(const char* ssid, const char* pass) {
-    _ssid = ssid;
-    _pass = pass;
+    _ssid = String(ssid);
+    _pass = String(pass);
     // Also save to Preferences
     _prefs->putString(MIMI_PREF_WIFI, MIMI_PREF_WIFI_SSID, ssid);
     _prefs->putString(MIMI_PREF_WIFI, MIMI_PREF_WIFI_PASS, pass);

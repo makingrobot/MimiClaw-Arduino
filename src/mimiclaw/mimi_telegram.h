@@ -9,10 +9,12 @@
 #include <Arduino.h>
 #include "mimi_bus.h"
 #include "mimi_prefs.h"
+#include "mimi_channel.h"
+#include "mimi_config.h"
 
 class MimiProxy; // forward
 
-class MimiTelegram {
+class MimiTelegram : public MimiChannel {
 public:
     MimiTelegram();
     bool begin(MimiBus* bus, MimiPrefs* prefs);
@@ -22,15 +24,16 @@ public:
     void setToken(const char* token);
     void setProxy(MimiProxy* proxy);
 
-    bool sendMessage(const char* chat_id, const char* text);
+    virtual bool sendMessage(const char* chat_id, const char* text) override;
+
+    virtual String name() const override { MIMI_CHAN_TELEGRAM; }
 
 private:
-    MimiBus* _bus = nullptr;
     MimiPrefs* _prefs = nullptr;
     MimiProxy* _proxy = nullptr;
     TaskHandle_t _taskHandle = nullptr;
 
-    char _token[128];
+    String _token;
     int64_t _updateOffset = 0;
     int64_t _lastSavedOffset = -1;
     unsigned long _lastOffsetSaveMs = 0;

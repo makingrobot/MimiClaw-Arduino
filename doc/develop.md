@@ -25,10 +25,15 @@
 
 ## 依赖库
 
-通过 Arduino 库管理器安装：
+通过 Arduino 库管理器安装
+
+基础依赖库：
 
 - **ArduinoJson** v7.0+，https://github.com/bblanchon/ArduinoJson
 - **WebSockets** v2.6+，https://github.com/Links2004/arduinoWebSockets
 - **ESP32Console** v1.3, https://github.com/jbtronics/ESP32Console
 
+使用GUI界面依赖库：
 
+- **lvgl** v9.0 
+- **FT6336** 

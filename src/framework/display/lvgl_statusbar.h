@@ -23,18 +23,14 @@ protected:
 
     // 状态栏
     lv_obj_t* status_label_ = nullptr;
-    lv_obj_t *notification_label_ = nullptr;
     lv_obj_t *mute_label_ = nullptr;
 
-    lv_obj_t *time_label_ = nullptr;
     lv_obj_t *network_label_ = nullptr;
     lv_obj_t *battery_label_ = nullptr;
     
     const char* battery_icon_ = nullptr;
     const char* network_icon_ = nullptr;
     bool muted_ = false;
-
-    Timer* notification_timer_ = nullptr;
 
 public:
     LvglStatusBar();
@@ -47,8 +43,6 @@ public:
     void Update(bool update_all = false);
    
     virtual void SetTheme(const ThemeColors& theme);
-
-    void OnNotificationTimer();
 
 private:
     const char* GetWifiIcon();

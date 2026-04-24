@@ -79,13 +79,13 @@ void MimiSkills::installSkill(const SkillInfo* info) {
     String path = String(MIMI_FILE_SKILLS_DIR) + "/" + info->filename + ".md";
 
     if (_file_system->ExistsFile(path.c_str())) {
-        MIMI_LOGD(TAG, __LINE__, "Skill exists: %s", path.c_str());
+        MIMI_LOGD(TAG, __LINE__, "Skill file exists: %s", path.c_str());
         return;
     }
 
     File f = _file_system->OpenFile(path.c_str(), FILE_WRITE);
     if (!f) {
-        MIMI_LOGE(TAG, __LINE__, "Cannot write skill: %s", path.c_str()); /* file: /skill/xxx.md */
+        MIMI_LOGE(TAG, __LINE__, "Cannot write skill file: %s", path.c_str()); /* file: /skill/xxx.md */
         return;
     }
 

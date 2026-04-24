@@ -12,7 +12,7 @@
 
 #define TAG "GfxLvglDriver"
 
-Arduino_GFX* _g_gfx;
+static GfxLvglDriver* g_driver;
 
 #if LV_USE_LOG != 0
 void _log_print_cb(lv_log_level_t level, const char *buf)
@@ -22,6 +22,12 @@ void _log_print_cb(lv_log_level_t level, const char *buf)
 }
 #endif
 
+GfxLvglDriver::GfxLvglDriver(Arduino_GFX* gfx, int width, int height, Touch* touch)
+        : DispDriver(width, height), gfx_(gfx) { 
+    g_driver = this;
+    touch_ = touch;
+}
+
 uint32_t _millis_cb(void)
 {
     return millis();
@@ -30,28 +36,23 @@ uint32_t _millis_cb(void)
 /* LVGL calls it when a rendered image needs to copied to the display*/
 void _flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map)
 {
-    Log::Debug(TAG, "gfx flush.");
+    g_driver->Flush(disp, area, px_map);
+}
 
-#ifndef DIRECT_MODE
-    uint32_t w = lv_area_get_width(area);
-    uint32_t h = lv_area_get_height(area);
-
-    _g_gfx->draw16bitRGBBitmap(area->x1, area->y1, (uint16_t *)px_map, w, h);
-#endif // #ifndef DIRECT_MODE
-
-    /*Call it to tell LVGL you are ready*/
-    lv_disp_flush_ready(disp);
+/*Read the touchpad*/
+void _touchpad_read(lv_indev_t *indev, lv_indev_data_t *data)
+{
+    g_driver->TouchRead(indev, data);
 }
 
 void GfxLvglDriver::Init() {
     Log::Info(TAG, "gfx lvgl driver init.");
     
-    // Init Display
-    if (!gfx_->begin()) {
-        Log::Error(TAG, "gfx->begin() failed!");
-        return;
+    gfx_->fillScreen(BLACK);
+
+    if (touch_) {
+        touch_->Init(width_, height_, 1);
     }
-    gfx_->fillScreen(RGB565_BLACK);
 
     lv_init();
 
@@ -73,15 +74,16 @@ void GfxLvglDriver::Init() {
     buf_size = screen_width * 40;
 #endif
 
-#if defined(DIRECT_MODE) && (defined(CANVAS) || defined(RGB_PANEL) || defined(DSI_PANEL))
+#if defined(DIRECT_MODE) && (defined(CANVAS) || defined(RGB_PANEL))
     disp_buf_ = (lv_color_t *)gfx->getFramebuffer();
-#else  // !(defined(DIRECT_RENDER_MODE) && (defined(CANVAS) || defined(RGB_PANEL) || defined(DSI_PANEL)))
+#else  // !(defined(DIRECT_MODE) && (defined(CANVAS) || defined(RGB_PANEL)))
     disp_buf_ = (lv_color_t *)heap_caps_malloc(buf_size * 2, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-    if (!disp_buf_) {
+    if (!disp_buf_)
+    {
         // remove MALLOC_CAP_INTERNAL flag try again
         disp_buf_ = (lv_color_t *)heap_caps_malloc(buf_size * 2, MALLOC_CAP_8BIT);
     }
-#endif // !(defined(DIRECT_MODE) && (defined(CANVAS) || defined(RGB_PANEL) || defined(DSI_PANEL)))
+#endif // !(defined(DIRECT_MODE) && (defined(CANVAS) || defined(RGB_PANEL)))
 
     if (!disp_buf_) {
         Log::Error(TAG, "LVGL disp_buf allocate failed!");
@@ -89,8 +91,6 @@ void GfxLvglDriver::Init() {
     }
    
     display_ = lv_display_create(screen_width, screen_height);
-    
-    _g_gfx = this->gfx_;
     lv_display_set_flush_cb(display_, _flush_cb);
 
 #ifdef DIRECT_MODE
@@ -99,14 +99,56 @@ void GfxLvglDriver::Init() {
     lv_display_set_buffers(display_, disp_buf_, NULL, buf_size * 2, LV_DISPLAY_RENDER_MODE_PARTIAL);
 #endif
 
-    /*Initialize the (dummy) input device driver*/
-//    lv_indev_t *indev = lv_indev_create();
-//    lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER); /*Touchpad should have POINTER type*/
-//    lv_indev_set_read_cb(indev, my_touchpad_read);
+    if (touch_) {
+        /*Initialize the (dummy) input device driver*/
+        indev_ = lv_indev_create();
+        lv_indev_set_type(indev_, LV_INDEV_TYPE_POINTER); /*Touchpad should have POINTER type*/
+        lv_indev_set_read_cb(indev_, _touchpad_read);
+    }
 
+    lvgl_task_ = new FrtTask("lvgl_task");
+    lvgl_task_->OnLoop([this](){
+        Loop();
+        vTaskDelay(pdMS_TO_TICKS(5));
+    });
+    lvgl_task_->Start(8192, 3);
 }
 
-void GfxLvglDriver::TaskHandler() {
+void GfxLvglDriver::Flush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map) {
+#ifndef DIRECT_MODE
+    uint32_t w = lv_area_get_width(area);
+    uint32_t h = lv_area_get_height(area);
+
+    gfx_->draw16bitRGBBitmap(area->x1, area->y1, (uint16_t *)px_map, w, h);
+#endif // #ifndef DIRECT_MODE
+
+    /*Call it to tell LVGL you are ready*/
+    lv_disp_flush_ready(disp);
+}
+
+void GfxLvglDriver::TouchRead(lv_indev_t *indev, lv_indev_data_t *data) {
+    if (touch_->HasSignal())
+    {
+        if (touch_->IsTouched())
+        {
+            data->state = LV_INDEV_STATE_PRESSED;
+
+            /*Set the coordinates*/
+            data->point.x = touch_->last_x();
+            data->point.y = touch_->last_y();
+        }
+        else if (touch_->IsReleased())
+        {
+            data->state = LV_INDEV_STATE_RELEASED;
+        }
+    }
+    else
+    {
+        data->state = LV_INDEV_STATE_RELEASED;
+    }
+}
+
+void GfxLvglDriver::Loop() {
     lv_task_handler();
 
 #ifdef DIRECT_MODE

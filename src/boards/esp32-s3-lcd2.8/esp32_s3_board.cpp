@@ -5,15 +5,23 @@
 #include "board_config.h"
 #include "esp32_s3_board.h"
 #include "src/framework/led/ws2812_led.h"
-#include "src/framework/display/gfx_display.h"
-#include "src/framework/display/gfx_lvgl_driver.h"
-// #include "src/framework/audio/codec/audio_es8311_codec.h"
 #include <Arduino.h>
+#include <SPI.h>
 
 #if CONFIS_USE_SPIFFS==1
 #include <SPIFFS.h>
 #elif CONFIG_USE_SDFS==1
 #include <SD_MMC.h>
+#endif
+
+#if CONFIG_USE_DISPLAY==1 && CONFIG_USE_LVGL==1
+#include "src/framework/display/gfx_lvgl_driver.h"
+#include "lvgl_log_display.h"
+#include "ft6336_touch.h"
+#endif
+
+#if CONFIG_USE_AUDIO==1
+#include "src/framework/audio/codec/audio_es8311_codec.h"
 #endif
 
 #define TAG "Esp32S3Board"
@@ -48,50 +56,72 @@ Esp32S3Board::Esp32S3Board() : MimiBoard() {
     };
     ESP_ERROR_CHECK(i2c_new_master_bus(&i2c_bus_cfg, &i2c_bus_));
 
+    InitFileSystem();
     InitDisplay();
     InitAudioCodec();
-    InitFileSystem();
 
     Log::Info( TAG, "===== Board config completed. =====");
 }
 
 void Esp32S3Board::InitAudioCodec() {
-    // Log::Info(TAG, "initial audio codec es8311.");
-    // /* 使用ES8311 驱动 */
-    // audio_codec_ = new AudioEs8311Codec(
-    //     i2c_bus_, 
-    //     I2C_NUM_0, 
-    //     AUDIO_INPUT_SAMPLE_RATE, 
-    //     AUDIO_OUTPUT_SAMPLE_RATE,
-    //     AUDIO_I2S_MCLK_PIN, 
-    //     AUDIO_I2S_BCLK_PIN, 
-    //     AUDIO_I2S_LRC_PIN, 
-    //     AUDIO_I2S_DOUT_PIN, 
-    //     AUDIO_I2S_DIN_PIN,
-    //     AUDIO_CODEC_PA_PIN, 
-    //     AUDIO_CODEC_ES8311_ADDR,
-    //     true,
-    //     true);
+#if CONFIG_USE_AUDIO==1
+    Log::Info(TAG, "initial audio codec es8311.");
+    /* 使用ES8311 驱动 */
+    audio_codec_ = new AudioEs8311Codec(
+        i2c_bus_, 
+        I2C_NUM_0, 
+        AUDIO_INPUT_SAMPLE_RATE, 
+        AUDIO_OUTPUT_SAMPLE_RATE,
+        AUDIO_I2S_MCLK_PIN, 
+        AUDIO_I2S_BCLK_PIN, 
+        AUDIO_I2S_LRC_PIN, 
+        AUDIO_I2S_DOUT_PIN, 
+        AUDIO_I2S_DIN_PIN,
+        AUDIO_CODEC_PA_PIN, 
+        AUDIO_CODEC_ES8311_ADDR,
+        true,
+        true);
+#endif
 }
 
 void Esp32S3Board::InitDisplay() {
+#if CONFIG_USE_DISPLAY==1 && CONFIG_USE_LVGL==1
     Log::Info( TAG, "Create GFX driver." );
     gfx_bus_ = new Arduino_ESP32SPI(
         DISPLAY_DC_PIN /* DC */, 
         DISPLAY_CS_PIN /* CS*/, 
         DISPLAY_CLK_PIN /* SCK */, 
         DISPLAY_MOSI_PIN /* MOSI */, 
-        GPIO_NUM_NC /* MISO */, 
-        2 /* spi_num */);
+        DISPLAY_MISO_PIN /* MISO */
+    );
 
     gfx_graphics_ = new Arduino_ILI9341(
         gfx_bus_, 
         DISPLAY_RST_PIN, 
-        0 /* rotation */, 
+        1 /* rotation */, 
         false /* IPS */);
 
-    Log::Info( TAG, "Create GFX display." );
-    display_ = new GfxDisplay(gfx_graphics_, DISPLAY_WIDTH, DISPLAY_HEIGHT);
+    if (!gfx_graphics_->begin()) {
+        Log::Error(TAG, "gfx-begin() failed!");
+        return;
+    } 
+    gfx_graphics_->invertDisplay(DISPLAY_INVERT_COLOR);
+    
+    Ft6336Touch *touch = new Ft6336Touch(TOUCH_SDA_PIN, TOUCH_SCL_PIN, TOUCH_INT_PIN, TOUCH_RST_PIN);
+
+    Log::Info( TAG, "Create Lvgl display." );
+    disp_driver_ = new GfxLvglDriver(gfx_graphics_, 320, 240, touch);
+    display_ = new LvglLogDisplay(disp_driver_, {
+                                    .text_font = &font_puhui_20_4,
+                                    .icon_font = &font_awesome_16_4,
+                                    .emoji_font = font_emoji_32_init(),
+                                });
+
+    // backlight_ = new PwmBacklight(DISPLAY_LED_PIN);
+    // backlight_->RestoreBrightness();
+    pinMode(DISPLAY_LED_PIN, OUTPUT);
+    digitalWrite(DISPLAY_LED_PIN, HIGH);
+#endif
 }
 
 void Esp32S3Board::InitFileSystem() {

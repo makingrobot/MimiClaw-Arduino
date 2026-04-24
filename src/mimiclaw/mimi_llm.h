@@ -41,9 +41,9 @@ public:
     void setApiUrl(const char* url);
     void setProxy(MimiProxy* proxy);
 
-    const char* getModel() { return _model; }
-    const char* getProvider() { return _provider; }
-    const char* getApiUrl() { return _apiUrl; }
+    const String&  getModel() { return _model; }
+    const String&  getProvider() { return _provider; }
+    const String&  getApiUrl() { return _apiUrl; }
 
     /**
      * Send a chat completion request with tools.
@@ -57,12 +57,12 @@ public:
                        const char* tools_json, LlmResponse* resp);
 
 private:
-    char _apiKey[320];
-    char _model[64];
-    char _provider[16];
-    char _apiUrl[256];
     MimiProxy* _proxy;
     MimiPrefs* _prefs;
+    String _apiKey;
+    String _model;
+    String _provider;
+    String _apiUrl;
 
     bool isOpenAI();
     const char* apiUrl();
@@ -83,8 +83,8 @@ private:
     bool parseOpenAIResponse(const String& body, LlmResponse* resp);
     
     // Convert tools/messages for OpenAI format
-    String convertToolsOpenAI(const char* tools_json);
-    String convertMessagesOpenAI(const char* system_prompt, JsonArray messages);
+    //String convertToolsOpenAI(const char* tools_json);
+    //String convertMessagesOpenAI(const char* system_prompt, JsonArray messages);
 };
 
 #endif // MIMI_LLM_H

@@ -88,8 +88,8 @@ bool MimiPrefs::putString(const char *ns, const char *key, const char *value) {
     if (!_prefsDoc.containsKey(ns)) {
         _prefsDoc.createNestedObject(ns);
     }
-    std::string map_key = std::string(ns)+"_"+key;
-    _prefsMap[map_key] = std::string(value); //cached.
+    String map_key = String(ns)+"_"+key;
+    _prefsMap[map_key] = String(value); //cached.
     _prefsDoc[ns][key] = _prefsMap[map_key];
 #endif
 }

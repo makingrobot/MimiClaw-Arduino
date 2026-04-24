@@ -8,10 +8,11 @@
 
 #include <Arduino.h>
 #include <WebSocketsServer.h>
-#include "mimi_bus.h"
 #include "mimi_config.h"
+#include "mimi_bus.h"
+#include "mimi_channel.h"
 
-class MimiWS {
+class MimiWS : public MimiChannel {
 public:
     MimiWS();
     bool begin(MimiBus* bus);
@@ -19,10 +20,11 @@ public:
     void stop();
     void loop();   // Must be called periodically if not using a task
 
-    bool send(const char* chat_id, const char* text);
+    virtual bool sendMessage(const char* chat_id, const char* text) override;
+
+    virtual String name() const override { MIMI_CHAN_WEBSOCKET; }
 
 private:
-    MimiBus* _bus;
     WebSocketsServer* _server;
     TaskHandle_t _taskHandle;
 

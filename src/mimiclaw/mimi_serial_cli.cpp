@@ -20,6 +20,11 @@ MimiSerialCli::MimiSerialCli() {
     g_serialcli = this;
 }
 
+bool MimiSerialCli::begin(MimiBus *bus) {
+    _bus = bus;
+    return true;
+}
+
 /**
  * cmd: set_wifi ssid password
  */
@@ -586,22 +591,22 @@ static int cmd_web_search(int argc, char **argv)
     MimiApplication *app = (MimiApplication *)(&Application::GetInstance());
     MimiWebsearch& search = app->websearch();
     if (search.provider().isEmpty()) {
-        printf("Not config provider.");
+        printf("No provider configured.");
         return 1;
     }
 
     if (search.provider()=="brave" && search.brave_key().isEmpty()) {
-        printf("Not config brave key.");
+        printf("No Brave key configured.");
         return 1;
 
     } else if (search.provider()=="tavily" && search.tavily_key().isEmpty()) {
-        printf("Not config tavily key.");
+        printf("No Tavily key configured.");
         return 1;
     }
 
     String query;
     for (int i=1; i<argc; i++) {
-        query += (String(argv[i]) + " ");
+        query += String(argv[i]).concat(" ");
     }
 
     char input_json[640];
@@ -637,26 +642,11 @@ static int cmd_talk(int argc, char **argv)
 
     String text;
     for (int i=1; i<argc; i++) {
-        text += (String(argv[i]) + " ");
+        text += String(argv[i]).concat(" ");
     }
 
-    MimiApplication *app = (MimiApplication *)(&Application::GetInstance());
-    MimiMsg msg;
-    memset(&msg, 0, sizeof(msg));
-    strncpy(msg.channel, MIMI_CHAN_CLI, sizeof(msg.channel) - 1);
-    strncpy(msg.chat_id, "cli", sizeof(msg.chat_id) - 1);
-    msg.content = strdup(text.c_str());
-    if (!msg.content) {
-        printf("Out of memory.\n");
-        return 1;
-    }
-
-    if (!app->pushMessage(&msg)) {
-        MIMI_LOGW(TAG, "Inbound queue full, dropping message");
-        free(msg.content);
-        return 1;
-    }
-
+    g_serialcli->onMessage("cli", text.c_str());
+    
     return 0;
 }
 

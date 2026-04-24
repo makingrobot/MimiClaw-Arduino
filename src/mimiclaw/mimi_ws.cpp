@@ -7,7 +7,7 @@ static const char* TAG MIMI_TAG_UNUSED = "ws";
 
 MimiWS* MimiWS::_instance = nullptr;
 
-MimiWS::MimiWS() : _bus(nullptr), _server(nullptr), _taskHandle(nullptr) {
+MimiWS::MimiWS() : _server(nullptr), _taskHandle(nullptr) {
     memset(_clients, 0, sizeof(_clients));
     _instance = this;
 }
@@ -92,16 +92,7 @@ void MimiWS::onEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length
 
                 MIMI_LOGI(TAG, "WS message from %s: %.40s...", chatId, content);
 
-                MimiMsg msg;
-                memset(&msg, 0, sizeof(msg));
-                strncpy(msg.channel, MIMI_CHAN_WEBSOCKET, sizeof(msg.channel) - 1);
-                strncpy(msg.chat_id, chatId, sizeof(msg.chat_id) - 1);
-                msg.content = strdup(content);
-                if (msg.content && _bus) {
-                    if (!_bus->pushInbound(&msg)) {
-                        free(msg.content);
-                    }
-                }
+                onMessage(chatId, content);
             }
             break;
         }
@@ -111,7 +102,7 @@ void MimiWS::onEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length
     }
 }
 
-bool MimiWS::send(const char* chat_id, const char* text) {
+bool MimiWS::sendMessage(const char* chat_id, const char* text) {
     if (!_server) return false;
 
     WsClient* client = findByChatId(chat_id);

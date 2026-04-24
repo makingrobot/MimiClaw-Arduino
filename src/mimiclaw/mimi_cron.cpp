@@ -17,6 +17,11 @@ bool tool_cron_remove_execute(const char* input_json, char* output, size_t outpu
 
 MimiCron::MimiCron() : _jobCount(0), _bus(nullptr), _taskHandle(nullptr) {
     g_cron = this;
+}
+
+bool MimiCron::begin(MimiBus* bus, FileSystem *file_system) {
+    _bus = bus;
+    _file_system = file_system;
 
     // cron_add
     static const MimiTool ca = {
@@ -44,11 +49,7 @@ MimiCron::MimiCron() : _jobCount(0), _bus(nullptr), _taskHandle(nullptr) {
         tool_cron_remove_execute
     };
     _tools.push_back(&cr);
-}
-
-bool MimiCron::begin(MimiBus* bus, FileSystem *file_system) {
-    _bus = bus;
-    _file_system = file_system;
+    
     return loadJobs();
 }
 

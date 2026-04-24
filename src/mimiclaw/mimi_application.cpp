@@ -1,14 +1,16 @@
 #include "mimi_application.h"
 #include <esp_heap_caps.h>
+#include <vector>
+#include <string>
 #include "src/framework/board/board.h"
 #include "src/framework/file/file_system.h"
 #include "ArduinoJson.h"
 #include "arduino_json_psram.h"
 #include "mimi_board.h"
 
-#if CONFIG_USE_DISPLAY==1
-#include "src/framework/display/display.h"
-#include "src/framework/display/gfx_window.h"
+#if CONFIG_USE_DISPLAY==1 && CONFIG_USE_LVGL==1 
+#include "src/framework/display/gfx_lvgl_driver.h"
+#include "src/framework/display/lvgl_display.h"
 #endif
 
 #define TAG "mimiapp"
@@ -23,6 +25,12 @@ bool MimiApplication::OnInit() {
     MIMI_LOGI(TAG, "========================================");
     MIMI_LOGI(TAG, "  MimiClaw - ESP32-S3 AI Agent");
     MIMI_LOGI(TAG, "========================================");
+
+#if CONFIG_USE_DISPLAY==1
+    LvglDisplay* display =  (LvglDisplay*)(Board::GetInstance().GetDisplay());
+    display->SetStatus("MimiClaw AI Agent");
+    display->SetMessage("system", "Starting...");
+#endif
 
     // Print memory info
     MIMI_LOGI(TAG, "Internal free: %d bytes",
@@ -51,13 +59,6 @@ bool MimiApplication::OnInit() {
             }
         }
     }
-
-#if CONFIG_USE_DISPLAY==1
-    Display *display = board.GetDisplay();
-    if (display != nullptr) {
-        display->Init();
-    }
-#endif
 
     // Initialize subsystems
     if (!_prefs.begin(file_system)) {
@@ -138,6 +139,11 @@ bool MimiApplication::OnInit() {
         return false;
     }
 
+    if (!_serial_cli.begin(&_bus)) {
+        MIMI_LOGE(TAG, __LINE__, "SerialCli init failed");
+        return false;
+    }
+
     // Set up context builder dependencies
     _context.setMemory(&_memory);
     _context.setSkills(&_skills);
@@ -150,10 +156,17 @@ bool MimiApplication::OnInit() {
 
     _websearch.init(&_prefs);
     
+    _channel_map[_feishu.name()] = &_feishu;
+    _channel_map[_telegram.name()] = &_telegram;
+    _channel_map[_ws.name()] = &_ws;
+    _channel_map[_serial_cli.name()] = &_serial_cli;
+    _channel_map[_local.name()] = &_local;
+
     registerTools();
     installSkills();
     
     MIMI_LOGI(TAG, "All subsystems initialized");
+    showMessageOnDisplay("system", "All subsystems initialized");
 
     // start
     bool state = Start();
@@ -170,37 +183,14 @@ void MimiApplication::outboundTask(void* arg) {
         if (!self->_bus.popOutbound(&msg, UINT32_MAX)) continue;
 
         MIMI_LOGI(TAG, "Dispatching response to %s:%s", msg.channel, msg.chat_id);
-        self->showOnDisplay("Response to " + std::string(msg.channel));
 
-        if (strcmp(msg.channel, MIMI_CHAN_TELEGRAM) == 0) {
-            if (!self->_telegram.sendMessage(msg.chat_id, msg.content)) {
-                MIMI_LOGE(TAG, __LINE__, "Telegram send failed for %s", msg.chat_id);
-            } else {
-                MIMI_LOGI(TAG, "Telegram send success for %s (%d bytes)",
-                          msg.chat_id, (int)strlen(msg.content));
+        self->showMessageOnDisplay("agent", msg.content);
+
+        MimiChannel *ch = self->findChannel(msg.channel);
+        if (ch) {
+            if (!ch->sendMessage(msg.chat_id, msg.content)) {
+                MIMI_LOGE(TAG, __LINE__, "%s send failed for %s", msg.channel, msg.chat_id);
             }
-
-        } else if (strcmp(msg.channel, MIMI_CHAN_WEBSOCKET) == 0) {
-            if (!self->_ws.send(msg.chat_id, msg.content)) {
-                MIMI_LOGW(TAG, "WS send failed for %s", msg.chat_id);
-            }
-
-        } else if (strcmp(msg.channel, MIMI_CHAN_CLI) == 0) {
-            if (!self->_serial_cli.sendMessage(msg.chat_id, msg.content)) {
-                MIMI_LOGI(TAG, "CLI send failed for [%s]", msg.chat_id);
-            }
-
-        } else if (strcmp(msg.channel, MIMI_CHAN_FEISHU) == 0) {
-            if (!self->_feishu.sendMessage(msg.chat_id, msg.content)) {
-                MIMI_LOGE(TAG, __LINE__, "Feishu send failed for %s", msg.chat_id);
-            } else {
-                MIMI_LOGI(TAG, "Feishu send success for %s (%d bytes)",
-                          msg.chat_id, (int)strlen(msg.content));
-            }
-            
-        } else if (strcmp(msg.channel, MIMI_CHAN_SYSTEM) == 0) {
-            MIMI_LOGI(TAG, "System message [%s]: %.128s", msg.chat_id, msg.content);
-
         } else {
             MIMI_LOGW(TAG, "Unknown channel: %s", msg.channel);
         }
@@ -216,7 +206,6 @@ bool MimiApplication::Start() {
     if (!_wifi.start()) {
         MIMI_LOGW(TAG, "WiFi start failed");
         // WiFi信息缺失，启动配置
-        showOnDisplay("Waiting for configure WiFi...");
         _onboard.start();  //阻塞
         return false;
     }
@@ -226,18 +215,17 @@ bool MimiApplication::Start() {
         MIMI_LOGW(TAG, "WiFi connection timeout");
         
         // 启动配置
-        showOnDisplay("Waiting for configure WiFi...");
         _onboard.start();  //阻塞
         return false;
     }
 
     if (!_onboard.start(true)) {
-        showOnDisplay("Onboard service start failed");
+        showMessageOnDisplay("system", "Onboard service start failed");
         MIMI_LOGW(TAG, "Onboard start failed");
         return false;
     }
 
-    showOnDisplay(std::string("WiFi connected: ") + _wifi.getIP());
+    showMessageOnDisplay("system", String("WiFi connected: ") + _wifi.getIP());
     MIMI_LOGI(TAG, "WiFi connected: %s", _wifi.getIP());
 
     // Start outbound dispatch first
@@ -264,7 +252,7 @@ bool MimiApplication::Start() {
     
     _started = true;
 
-    showOnDisplay("Services is ready, Waiting to talk...");
+    showMessageOnDisplay("system", "Services is ready, Waiting to talk...");
     MIMI_LOGI(TAG, "All services started!");
     return true;
 }
@@ -336,10 +324,6 @@ void MimiApplication::setSearchProvider(const char* provider) {
     _websearch.setProvider(provider);
 }
 
-bool MimiApplication::pushMessage(const MimiMsg* msg) {
-    return _bus.pushInbound(msg);
-}
-
 bool MimiApplication::heartbeatTrigger() {
     return _heartbeat.trigger();
 }
@@ -372,9 +356,38 @@ void MimiApplication::installSkills() {
     }
 }
 
-void MimiApplication::showOnDisplay(const std::string& text) {
-#if CONFIG_USE_DISPLAY==1
-    GfxWindow* window = (GfxWindow*)(Board::GetInstance().GetDisplay()->GetWindow());
-    window->AppendText(text);
+MimiChannel* MimiApplication::findChannel(const char* name) {
+    String key = String(name);
+    auto it = _channel_map.find(key);
+    return it != _channel_map.end() ? it->second : nullptr; 
+}
+
+
+/**
+ * 取前几行
+ */
+static String _get_first_lines(const String& text, uint8_t num) {
+    std::istringstream iss(text.c_str());
+    std::string line;
+    std::vector<String> lines;
+    while (std::getline(iss, line) && lines.size() < num) {
+        String s = String(line.c_str());
+        s.trim();
+        if (s != "") lines.push_back(s);
+    }
+    String result;
+    for (const auto& s : lines) {
+        result += s + "\n";
+    }
+    return result;
+}
+
+void MimiApplication::showMessageOnDisplay(const String& kind, const String& text) {
+#if CONFIG_USE_DISPLAY==1 && CONFIG_USE_LVGL==1
+    Schedule([kind, text](){  //同步到 Setup调用 线程上，且按序执行
+        LvglDisplay* display =  (LvglDisplay*)(Board::GetInstance().GetDisplay());
+        display->SetMessage(kind, _get_first_lines(text, 3));
+    });
 #endif
 }
+

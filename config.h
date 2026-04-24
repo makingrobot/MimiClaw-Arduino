@@ -7,7 +7,7 @@
 #define _CONFIG_H
 
 // 板子配置
-#define BOARD_ESP32_S3_MOC        1
+#define BOARD_ESP32_S3_LCD_2_8        1
 
 #if BOARD_ESP32_S3_DEVKIT == 1
 #include "src/boards/esp32-s3-devkit/board_config.h"

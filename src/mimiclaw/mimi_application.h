@@ -11,8 +11,10 @@
 #ifndef MIMI_APPLICATION_H
 #define MIMI_APPLICATION_H
 
+#include <map>
 #include <Arduino.h>
 #include "mimi_config.h"
+#include "mimi_channel.h"
 #include "mimi_prefs.h"
 #include "mimi_bus.h"
 #include "mimi_wifi.h"
@@ -70,9 +72,6 @@ public:
     bool isWiFiConnected();
     const char* getIP();
 
-    // 推送消息
-    bool pushMessage(const MimiMsg* msg);
-
     bool heartbeatTrigger();
 
     // Web搜索
@@ -83,8 +82,10 @@ public:
     // 注册工具
     void registerTool(const MimiTool* tool);
     
+    MimiChannel* findChannel(const char* name);
+    
     // 在显示器上显示文本
-    void showOnDisplay(const std::string& text);
+    void showMessageOnDisplay(const String& kind, const String& text);
 
     // --- Memory ---
     MimiMemory& memory() { return _memory; }
@@ -111,19 +112,21 @@ private:
     MimiAgent _agent;
     MimiMemory _memory;
     MimiSession _session;
-    MimiTelegram _telegram;
-    MimiWS _ws;
     MimiProxy _proxy;
     MimiToolRegistry _tools;
     MimiCron _cron;
     MimiHeartbeat _heartbeat;
     MimiSkills _skills;
     MimiContext _context;
-    MimiSerialCli _serial_cli;
     MimiWebsearch _websearch;
     MimiOnboard _onboard;
-    MimiFeishu _feishu;
 
+    MimiSerialCli _serial_cli;
+    MimiWS _ws;
+    MimiTelegram _telegram;
+    MimiFeishu _feishu;
+    MimiLocal _local;
+    
     bool _started;
     
     // Outbound dispatch task
@@ -133,6 +136,8 @@ private:
     void registerTools();
     // 安装技能
     void installSkills();
+
+    std::map<String, MimiChannel*> _channel_map;
 
     TaskHandle_t _outboundTaskHandle;
 };

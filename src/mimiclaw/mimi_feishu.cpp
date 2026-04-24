@@ -17,11 +17,6 @@
 #include "arduino_json_psram.h"
 #include "feishu_pack.h"
 
-/**
- * TODO: Refactor  
- * 3. esp_web_socket  -> WebSockets lib
- */ 
-
 static const char *TAG = "feishu";
 
 /* ── Feishu API endpoints ──────────────────────────────────── */
@@ -39,6 +34,39 @@ static size_t s_seen_msg_idx = 0;
 
 MimiFeishu::MimiFeishu() {
     
+}
+
+bool MimiFeishu::begin(MimiBus *bus, MimiPrefs *prefs)
+{
+    _bus = bus;
+    _prefs = prefs;
+
+    // Load token from Preferences
+    _appId = prefs->getString(MIMI_PREF_FS, MIMI_PREF_FS_APPID, "");
+    _appSecret = prefs->getString(MIMI_PREF_FS, MIMI_PREF_FS_APPSECRET, "");
+
+    if (_appId.isEmpty()) _appId = MIMI_FEISHU_APP_ID;
+    if (_appSecret.isEmpty()) _appSecret = MIMI_FEISHU_APP_SECRET;
+
+    if (_appId.isEmpty() || _appSecret.isEmpty()) {
+        MIMI_LOGW(TAG, "No credentials. Use CLI: set_feishu_creds <APP_ID> <APP_SECRET>");
+    } else {
+        MIMI_LOGI(TAG, "credentials loaded (app_id=%.8s...)", _appId.c_str());
+    }
+
+    return true;
+}
+
+void MimiFeishu::setCredentials(const char *app_id, const char *app_secret)
+{
+    _appId = String(app_id);
+    _appSecret = String(app_secret);
+
+    _prefs->putString(MIMI_PREF_FS, MIMI_PREF_FS_APPID, app_id);
+    _prefs->putString(MIMI_PREF_FS, MIMI_PREF_FS_APPSECRET, app_secret);
+    _prefs->update();
+    
+    MIMI_LOGI(TAG, "credentials saved");
 }
 
 void MimiFeishu::setProxy(MimiProxy* proxy) {
@@ -100,7 +128,7 @@ int MimiFeishu::sendWsFrame(const ws_frame_t *f, const uint8_t *payload, size_t 
 /* ── Get / refresh tenant access token ─────────────────────── */
 bool MimiFeishu::getTenantToken()
 {
-    if (_app_id.isEmpty() || _app_secret.isEmpty()) {
+    if (_appId.isEmpty() || _appSecret.isEmpty()) {
         MIMI_LOGW(TAG, "No credentials configured");
         return false; //ESP_ERR_INVALID_STATE;
     }
@@ -112,8 +140,8 @@ bool MimiFeishu::getTenantToken()
 
     // 请求处理
     JsonDocument request(&spiram_allocator);
-    request["app_id"] = _app_id.c_str();
-    request["app_secret"] = _app_secret.c_str();
+    request["app_id"] = _appId.c_str();
+    request["app_secret"] = _appSecret.c_str();
     
     String json_str;
     serializeJson(request, json_str);
@@ -287,8 +315,8 @@ bool MimiFeishu::pullWsConfig()
 {
     // 请求处理
     JsonDocument request(&spiram_allocator);
-    request["AppID"] = _app_id.c_str();
-    request["AppSecret"] = _app_secret.c_str();
+    request["AppID"] = _appId.c_str();
+    request["AppSecret"] = _appSecret.c_str();
 
     String json_str;
     serializeJson(request, json_str);
@@ -536,45 +564,10 @@ void MimiFeishu::handleMessage(const JsonObject& event_obj)
         route_id = sender_id;
     }
 
-    /* Push to inbound message bus */
-    MimiMsg msg;
-    memset(&msg, 0, sizeof(msg));
-    strncpy(msg.channel, MIMI_CHAN_FEISHU, sizeof(msg.channel) - 1);
-    strncpy(msg.chat_id, route_id, sizeof(msg.chat_id) - 1);
-    msg.content = strdup(cleaned);
-    if (msg.content) {
-        if (!_bus->pushInbound(&msg)) {
-            MIMI_LOGW(TAG, "Inbound queue full, dropping message");
-            free(msg.content);
-        }
-    }
+    onMessage(route_id, cleaned);
 }
 
 /* Webhook mode intentionally disabled: Feishu channel runs in WebSocket mode only. */
-
-/* ── Public API ────────────────────────────────────────────── */
-
-bool MimiFeishu::begin(MimiBus *bus, MimiPrefs *prefs)
-{
-    _bus = bus;
-    _prefs = prefs;
-
-    // Load token from Preferences
-    _app_id = prefs->getString(MIMI_PREF_FS, MIMI_PREF_FS_APPID, "");
-    _app_secret = prefs->getString(MIMI_PREF_FS, MIMI_PREF_FS_APPSECRET, "");
-
-    if (_app_id.isEmpty()) _app_id = MIMI_FEISHU_APP_ID;
-    if (_app_secret.isEmpty()) _app_secret = MIMI_FEISHU_APP_SECRET;
-
-    if (_app_id.isEmpty() || _app_secret.isEmpty()) {
-        MIMI_LOGW(TAG, "No credentials. Use CLI: set_feishu_creds <APP_ID> <APP_SECRET>");
-    } else {
-        MIMI_LOGI(TAG, "credentials loaded (app_id=%.8s...)", _app_id.c_str());
-    }
-
-    return true;
-}
-
 
 void MimiFeishu::pollTask()
 {
@@ -661,7 +654,7 @@ bool MimiFeishu::start()
 
 bool MimiFeishu::sendMessage(const char *chat_id, const char *text)
 {
-    if (_app_id.isEmpty() || _app_secret.isEmpty()) {
+    if (_appId.isEmpty() || _appSecret.isEmpty()) {
         MIMI_LOGW(TAG, "Cannot send: no credentials configured");
         return false;
     }
@@ -746,7 +739,7 @@ bool MimiFeishu::sendMessage(const char *chat_id, const char *text)
 
 bool MimiFeishu::replyMessage(const char *message_id, const char *text)
 {
-    if (_app_id.isEmpty() || _app_secret.isEmpty()) {
+    if (_appId.isEmpty() || _appSecret.isEmpty()) {
         MIMI_LOGW(TAG, "Cannot send: no credentials configured");
         return false; //ESP_ERR_INVALID_STATE;
     }
@@ -795,16 +788,4 @@ bool MimiFeishu::replyMessage(const char *message_id, const char *text)
     }
        
     return true;
-}
-
-void MimiFeishu::setCredentials(const char *app_id, const char *app_secret)
-{
-    _app_id = String(app_id);
-    _app_secret = String(app_secret);
-
-    _prefs->putString(MIMI_PREF_FS, MIMI_PREF_FS_APPID, app_id);
-    _prefs->putString(MIMI_PREF_FS, MIMI_PREF_FS_APPSECRET, app_secret);
-    _prefs->update();
-    
-    MIMI_LOGI(TAG, "credentials saved");
 }

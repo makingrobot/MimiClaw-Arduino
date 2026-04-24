@@ -6,6 +6,7 @@
 #include <ArduinoJson.h>
 #include "arduino_json_psram.h"
 #include "onboard_html.h"
+#include "mimi_application.h"
 
 #define TAG "onboard"
 
@@ -37,21 +38,29 @@ bool MimiOnboard::start(bool admin) {
     MIMI_LOGI(TAG, "  Starting WiFi Configuration Portal");
     MIMI_LOGI(TAG, "========================================");
 
+    MimiApplication *app = (MimiApplication*)(&Application::GetInstance());
+
     // 开始热点
     String ap_ssid = getSsid();
     WiFi.mode(admin ? WIFI_AP_STA : WIFI_AP);
     WiFi.softAPConfig(ap_ip, ap_gateway, ap_subnet);
     if (!WiFi.softAP(ap_ssid.c_str())) {
         MIMI_LOGE(TAG, __LINE__, "Soft AP creation failed.");
+        app->showMessageOnDisplay("system", "Soft AP creation failed.");
         return false;
     }
-    MIMI_LOGI(TAG, "Wifi AP %s on %s", ap_ssid.c_str(), ap_ip.toString());
 
     _webserver = new WebServer(80);
     if (!_webserver) {
         MIMI_LOGE(TAG, __LINE__, "Failed to create Webserver");
+        app->showMessageOnDisplay("system", "Failed to create Webserver");
         return false;
     }
+
+    char msg[64] = {0};
+    snprintf(msg, 127, "Wifi AP %s on %s", ap_ssid.c_str(), ap_ip.toString());
+    MIMI_LOGI(TAG, msg);
+    app->showMessageOnDisplay("system", msg);
 
     _webserver->on("/", HTTP_GET, [this](){ handleRoot(); });
 
@@ -84,6 +93,8 @@ bool MimiOnboard::start(bool admin) {
     }
 
     if (!admin) {
+        app->showMessageOnDisplay("system", "Waiting for configure WiFi...");
+
         /* Block forever — onboarding ends with esp_restart() in /save handler */
         while (1) {
             MIMI_LOGI(TAG, "Waiting for configure wifi ...");
@@ -236,7 +247,10 @@ void MimiOnboard::handleSave() {
     
     _webserver->send(200, "application/json", "{\"ok\":true}");
 
-    MIMI_LOGI(TAG, "Configuration saved, restarting in 2s...");
+    const char *msg = "Configuration saved, restarting in 2s...";
+    MIMI_LOGI(TAG, msg);
+    MimiApplication *app = (MimiApplication*)(&Application::GetInstance());
+    app->showMessageOnDisplay("system", msg);
 
     // 创建一个延迟重启任务
     xTaskCreate([](void *arg) {

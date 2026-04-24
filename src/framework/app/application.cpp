@@ -65,10 +65,12 @@ Application::~Application() {
 void Application::Init() {
     Log::Info(TAG, "Initialize...");
         
+#if CONFIG_USE_DISPLAY==1
     // 显示模块初始化
     auto& board = Board::GetInstance();
     Display* display = board.GetDisplay();
     display->Init();
+#endif
 
 #if CONFIG_CLOCK_ENABLE==1
     // 时钟定时器，可重载OnClockTimer插入自定义功能
@@ -79,7 +81,9 @@ void Application::Init() {
 
     SetDeviceState(kDeviceStateStarting);
 
+#if CONFIG_USE_DISPLAY==1
     display->UpdateStatusBar(true);
+#endif
 
 #if CONFIG_WIFI_CONFIGURE_ENABLE==1    
     // WiFi配置

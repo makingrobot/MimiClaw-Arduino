@@ -38,9 +38,9 @@ void MimiWebsearch::init(MimiPrefs* prefs) {
         MIMI_LOGI(TAG, "Websearch provider not set.");
     } else {
         if (strcmp("tavily", _provider.c_str()) == 0) {
-            MIMI_LOGI(TAG, _tavily_key.isEmpty() ? "Tavily key not set." : "Using tavily websearch.");
+            MIMI_LOGI(TAG, _tavily_key.isEmpty() ? "No Tavily key configured." : "Using tavily websearch.");
         } else if (strcmp("brave", _provider.c_str()) == 0) {
-            MIMI_LOGI(TAG, _brave_key.isEmpty() ? "Brave key not set." : "Using brave websearch.");
+            MIMI_LOGI(TAG, _brave_key.isEmpty() ? "No Brave key configured." : "Using brave websearch.");
         }
     }
 }
@@ -89,7 +89,7 @@ static size_t url_encode(const char* src, char* dst, size_t dst_size) {
 bool MimiWebsearch::search(const char* query, char* output, size_t output_size) {
     if (strcmp(_provider.c_str(), "brave")==0) {
         if (_brave_key.isEmpty()) {
-            MIMI_LOGE(TAG, __LINE__, "Brave key not config.");
+            MIMI_LOGE(TAG, __LINE__, "No Brave key configured.");
             return false;
         }
 
@@ -98,7 +98,7 @@ bool MimiWebsearch::search(const char* query, char* output, size_t output_size) 
 
     } else if (strcmp(_provider.c_str(), "tavily") == 0) {
         if (_tavily_key.isEmpty()) {
-            MIMI_LOGE(TAG, __LINE__, "Tavily key not config.");
+            MIMI_LOGE(TAG, __LINE__, "No Tavily key configured.");
             return false;
         }
 

@@ -20,28 +20,20 @@ void LlmResponse::free_response() {
 }
 
 MimiLLM::MimiLLM() : _proxy(nullptr) {
-    memset(_apiKey, 0, sizeof(_apiKey));
-    memset(_apiUrl, 0, sizeof(_apiUrl));
-    memset(_model, 0, sizeof(_model));
-    memset(_provider, 0, sizeof(_provider));
+
 }
 
 bool MimiLLM::begin(MimiPrefs* prefs) {
     _prefs = prefs;
 
     // Load from Preferences
-    String key = _prefs->getString(MIMI_PREF_LLM, MIMI_PREF_LLM_APIKEY, MIMI_LLM_API_KEY);
-    String model = _prefs->getString(MIMI_PREF_LLM, MIMI_PREF_LLM_MODEL, MIMI_LLM_MODEL);
-    String provider = _prefs->getString(MIMI_PREF_LLM, MIMI_PREF_LLM_PROVIDER, MIMI_LLM_PROVIDER);
-    String url = _prefs->getString(MIMI_PREF_LLM, MIMI_PREF_LLM_APIURL, MIMI_LLM_API_URL);
+    _apiKey = _prefs->getString(MIMI_PREF_LLM, MIMI_PREF_LLM_APIKEY, MIMI_LLM_API_KEY);
+    _model = _prefs->getString(MIMI_PREF_LLM, MIMI_PREF_LLM_MODEL, MIMI_LLM_MODEL);
+    _provider = _prefs->getString(MIMI_PREF_LLM, MIMI_PREF_LLM_PROVIDER, MIMI_LLM_PROVIDER);
+    _apiUrl = _prefs->getString(MIMI_PREF_LLM, MIMI_PREF_LLM_APIURL, MIMI_LLM_API_URL);
 
-    if (!key.isEmpty()) strncpy(_apiKey, key.c_str(), sizeof(_apiKey) - 1);
-    if (!model.isEmpty()) strncpy(_model, model.c_str(), sizeof(_model) - 1);
-    if (!provider.isEmpty()) strncpy(_provider, provider.c_str(), sizeof(_provider) - 1);
-    if (!url.isEmpty()) strncpy(_apiUrl, url.c_str(), sizeof(_apiUrl) - 1);
-
-    if (_apiKey[0]) {
-        MIMI_LOGI(TAG, "LLM initialized (provider: %s, model: %s)", _provider, _model);
+    if (!_apiKey.isEmpty()) {
+        MIMI_LOGI(TAG, "LLM initialized (provider: %s, model: %s)", _provider.c_str(), _model.c_str());
     } else {
         MIMI_LOGW(TAG, "No API key configured");
     }
@@ -49,31 +41,31 @@ bool MimiLLM::begin(MimiPrefs* prefs) {
 }
 
 void MimiLLM::setApiKey(const char* key) {
-    strncpy(_apiKey, key, sizeof(_apiKey) - 1);
+    _apiKey = String(key);
     _prefs->putString(MIMI_PREF_LLM, MIMI_PREF_LLM_APIKEY, key);
     _prefs->update();
     MIMI_LOGI(TAG, "API key saved");
 }
 
 void MimiLLM::setModel(const char* model) {
-    strncpy(_model, model, sizeof(_model) - 1);
+    _model = String(model);
     _prefs->putString(MIMI_PREF_LLM, MIMI_PREF_LLM_MODEL, model);
     _prefs->update();
-    MIMI_LOGI(TAG, "Model set to: %s", _model);
+    MIMI_LOGI(TAG, "Model set to: %s", _model.c_str());
 }
 
 void MimiLLM::setProvider(const char* provider) {
-    strncpy(_provider, provider, sizeof(_provider) - 1);
+    _provider = String(provider);
     _prefs->putString(MIMI_PREF_LLM, MIMI_PREF_LLM_PROVIDER, provider);
     _prefs->update();
-    MIMI_LOGI(TAG, "Provider set to: %s", _provider);
+    MIMI_LOGI(TAG, "Provider set to: %s", _provider.c_str());
 }
 
 void MimiLLM::setApiUrl(const char* url) {
-    strncpy(_apiUrl, url, sizeof(_apiUrl) - 1);
+    _apiUrl = String(url);
     _prefs->putString(MIMI_PREF_LLM, MIMI_PREF_LLM_APIURL, url);
     _prefs->update();
-    MIMI_LOGI(TAG, "API URL set to: %s", _apiUrl);
+    MIMI_LOGI(TAG, "API URL set to: %s", _apiUrl.c_str());
 }
 
 void MimiLLM::setProxy(MimiProxy* proxy) {
@@ -81,13 +73,13 @@ void MimiLLM::setProxy(MimiProxy* proxy) {
 }
 
 bool MimiLLM::isOpenAI() {
-    return strcmp(_provider, "openai") == 0 || strcmp(_provider, "deepseek") == 0;
+    return _provider == "openai" || _provider == "deepseek";
 }
 
 const char* MimiLLM::apiUrl() {
-    if (_apiUrl[0]) return _apiUrl;
+    //if (_apiUrl[0]) return _apiUrl;
     //return isOpenAI() ? MIMI_OPENAI_API_URL : MIMI_LLM_API_URL;
-    return _apiUrl;
+    return _apiUrl.c_str();
 }
 
 const char* MimiLLM::apiHost() {
@@ -275,8 +267,7 @@ String MimiLLM::httpDirect(const String& postData) {
 
     http.addHeader("Content-Type", "application/json");
     if (isOpenAI()) {
-        String auth = "Bearer " + String(_apiKey);
-        http.addHeader("Authorization", auth);
+        http.addHeader("Authorization", "Bearer " + _apiKey);
         //MIMI_LOGD(TAG, __LINE__, "Authorization: %s", auth.c_str());
     } else {
         http.addHeader("x-api-key", _apiKey);
@@ -397,14 +388,14 @@ bool MimiLLM::chatWithTools(const char* system_prompt, JsonArray messages,
                             const char* tools_json, LlmResponse* resp) {
     memset(resp, 0, sizeof(LlmResponse));
 
-    if (_apiKey[0] == '\0') {
+    if (_apiKey.isEmpty()) {
         MIMI_LOGE(TAG, __LINE__, "No API key configured");
         return false;
     }
 
     String postData = buildRequestBody(system_prompt, messages, tools_json);
     MIMI_LOGI(TAG, "Calling LLM API (provider: %s, model: %s, body: %d bytes)",
-              _provider, _model, postData.length());
+              _provider.c_str(), _model.c_str(), postData.length());
 
     String response;
     if (_proxy && _proxy->isEnabled()) {
