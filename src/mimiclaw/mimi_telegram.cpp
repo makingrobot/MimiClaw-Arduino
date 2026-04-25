@@ -280,7 +280,7 @@ bool MimiTelegram::start() {
             MimiTelegram* self = (MimiTelegram*)arg;
             self->pollTask();
         }, 
-        "tg_poll", 
+        "telegram_task", 
         MIMI_TG_POLL_STACK,  //注意：过大可能会导致创建失败。
         this, 
         MIMI_TG_POLL_PRIO, 

@@ -202,6 +202,10 @@ void MimiApplication::outboundTask(void* arg) {
 bool MimiApplication::Start() {
     if (_started) return true;
 
+    if (!_serial_cli.start()) {
+        MIMI_LOGW(TAG, "Serial CLI start failed");
+    }
+
     // Connect WiFi
     if (!_wifi.start()) {
         MIMI_LOGW(TAG, "WiFi start failed");
@@ -230,7 +234,7 @@ bool MimiApplication::Start() {
 
     // Start outbound dispatch first
     BaseType_t ok = xTaskCreatePinnedToCore(
-        outboundTask, "outbound", MIMI_OUTBOUND_STACK,
+        outboundTask, "outbound_task", MIMI_OUTBOUND_STACK,
         this, MIMI_OUTBOUND_PRIO, &_outboundTaskHandle, MIMI_OUTBOUND_CORE);
     if (ok != pdPASS) {
         MIMI_LOGE(TAG, __LINE__, "Failed to create outbound task");
@@ -244,11 +248,11 @@ bool MimiApplication::Start() {
     }
 
     _feishu.start();
-    //_telegram.start();
+    _telegram.start();
+    _ws.start();
+    
     _cron.start();
     _heartbeat.start();
-    _ws.start();
-    _serial_cli.start();
     
     _started = true;
 

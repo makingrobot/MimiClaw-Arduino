@@ -638,7 +638,7 @@ bool MimiFeishu::start()
             MimiFeishu *self = (MimiFeishu *)arg;
             self->pollTask();
         },
-        "fs_poll",
+        "feishu_task",
         MIMI_FEISHU_POLL_STACK, //注意：过大可能会导致创建失败。
         this,
         MIMI_FEISHU_POLL_PRIO,

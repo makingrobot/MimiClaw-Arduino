@@ -86,7 +86,7 @@ bool MimiOnboard::start(bool admin) {
     MIMI_LOGI(TAG, "WebServer started on port 80");
 
     // Create a task to run the WS loop
-    BaseType_t ok = xTaskCreate(webTask, "web_srv", 4096, this, 4, &_taskHandle);
+    BaseType_t ok = xTaskCreate(webTask, "webserver_task", 4096, this, 4, &_taskHandle);
     if (ok != pdPASS) {
         MIMI_LOGE(TAG, __LINE__, "Failed to create Web task");
         return false;

@@ -1,11 +1,17 @@
 ## 串口控制台
 
-### 串口控制台端口设置
-在mimiclaw/app_config.h中，通过设置 **CONFIG_USE_UART1** 为1，可将UART1口设置为串口控制台的端口，
-避免与日志输出串口（UART0）混用。<br/>
+要使用串口控制台，需使用ESP32提供的其它串口，程序默认使用UART1为控制台的端口（RX:18,TX:17）。
+
+### 端口自定义
+在mimiclaw/app_config.h中，通过设置 **CONFIG_USE_UART1** 为1，可将UART1口设置为串口控制台的端口，<br/>
 通过 **CONFIG_UART1_RX** 和 **CONFIG_UART1_TX** 可自定义UART1口的引脚。
 
-### 命令
+### 连接到控制台
+
+将串口UART1连接到电脑，使用任一串口连接程序均可连接到控制台，<br/>
+这里以网页端连接工具 https://www.xpstem.com/app/webserial/ 为例来说明。
+
+### 命令说明
 
 1.配置命令
 <ol>
@@ -55,5 +61,8 @@
 <ol>
 <li>led：LED控制工具</li>
 </ol>
+
+### 开发自定义命令
+
 
 

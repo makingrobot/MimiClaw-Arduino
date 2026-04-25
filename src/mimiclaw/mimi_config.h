@@ -223,7 +223,6 @@
 #define MIMI_CHAN_CLI               "cli"
 #define MIMI_CHAN_SYSTEM            "system"
 #define MIMI_CHAN_FEISHU            "feishu"
-#define MIMI_CHAN_VOICE             "voice"
 
 // ── Preferences namespaces ─────────────────────────────────────
 #ifndef MIMI_PREF_USE_NVS

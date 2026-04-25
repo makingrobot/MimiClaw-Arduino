@@ -273,7 +273,7 @@ bool MimiAgent::start() {
 
     for (size_t i = 0; i < sizeof(stackCandidates) / sizeof(stackCandidates[0]); i++) {
         BaseType_t ret = xTaskCreatePinnedToCore(
-            agentTask, "agent_loop", stackCandidates[i],
+            agentTask, "agentloop_task", stackCandidates[i],
             this, MIMI_AGENT_PRIO, &_taskHandle, MIMI_AGENT_CORE);
 
         if (ret == pdPASS) {

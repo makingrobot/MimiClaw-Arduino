@@ -22,10 +22,6 @@ GfxDisplay::GfxDisplay(Arduino_GFX* driver, int width, int height)
 
 }
 
-void GfxDisplay::SetWindow(GfxWindow* window) {
-    window_ = window;
-}
-
 bool GfxDisplay::Lock(int timeout_ms) {
     return true;
 }
@@ -36,10 +32,7 @@ void GfxDisplay::Unlock() {
 void GfxDisplay::Init() {
     Log::Info(TAG, "Init ......");
 
-    if (window_ == nullptr) {
-        window_ = new GfxWindow();
-    }
-    window_->Setup(driver_);
+    
 }
     
 void GfxDisplay::Rotate(uint8_t rotation) {
@@ -47,15 +40,11 @@ void GfxDisplay::Rotate(uint8_t rotation) {
 }
 
 void GfxDisplay::SetStatus(const std::string& status) {
-    if (window_!=nullptr) {
-        window_->SetStatus(status);
-    }
+    
 }
 
 void GfxDisplay::SetText(const std::string& text) {
-    if (window_!=nullptr) {
-        window_->SetText(1, text);
-    }
+    
 }
 
 #endif //CONFIG_USE_GFX_LIBRARY

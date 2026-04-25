@@ -144,7 +144,7 @@ bool MimiWS::start() {
     MIMI_LOGI(TAG, "WebSocket server started on port %d", MIMI_WS_PORT);
 
     // Create a task to run the WS loop
-    BaseType_t ok = xTaskCreate(wsTask, "ws_srv", 4096, this, 4, &_taskHandle);
+    BaseType_t ok = xTaskCreate(wsTask, "websocket_task", 4096, this, 4, &_taskHandle);
     if (ok != pdPASS) {
         MIMI_LOGE(TAG, __LINE__, "Failed to create WS task");
         return false;

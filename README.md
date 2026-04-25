@@ -28,10 +28,15 @@
 - SD卡模块（可选）
 
 
+## 系统架构
+
+![架构图](assets/arch.png)
+
+
 ## 文档
 
+- [安装](doc/install.md)
 - [串口控制台](doc/console.md)
-- [持久化文件](doc/persist_file.md)
 - [开发](doc/develop.md)
 - [自定义工具](doc/tools.md)
 

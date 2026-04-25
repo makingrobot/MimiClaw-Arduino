@@ -12,7 +12,6 @@
 
 #include <Arduino_GFX_Library.h>
 #include "display.h"
-#include "gfx_window.h"
 
 class GfxDisplay : public Display {
 public:
@@ -24,12 +23,8 @@ public:
     void SetStatus(const std::string& status) override;
     void SetText(const std::string& text) override;
     void UpdateStatusBar(bool update_all = false) override { }
-    void ShowNotification(const std::string &notification, int duration_ms = 3000) override { }
     void Sleep() override { }
    
-    void SetWindow(GfxWindow* window);
-    GfxWindow* GetWindow() override { return window_; }
-
     const Arduino_GFX* gfx() const { return driver_; }
 
 protected:
@@ -38,7 +33,6 @@ protected:
 
 private:
     Arduino_GFX *driver_ = nullptr;
-    GfxWindow* window_ = nullptr;
 
 };
 

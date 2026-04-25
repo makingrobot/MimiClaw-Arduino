@@ -28,9 +28,7 @@ public:
     virtual void SetStatus(const std::string& status) override;
     virtual void SetText(const std::string& text) override;
     virtual void UpdateStatusBar(bool update_all = false) { }
-    virtual void ShowNotification(const std::string &notification, int duration_ms = 3000) { }
     virtual void Sleep() { }
-    virtual Window* GetWindow() { return nullptr ;}
 
     void SetMessage(const String& kind, const String& text) override;
     void SetTheme(const std::string& theme_name);

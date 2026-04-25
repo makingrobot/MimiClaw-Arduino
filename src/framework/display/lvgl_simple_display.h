@@ -15,7 +15,6 @@
 #include <string>
 #include "disp_driver.h"
 #include "lvgl_style.h"
-#include "lvgl_window.h"
 #include "lvgl_statusbar.h"
 #include "../fonts/font_emoji.h"
 
@@ -29,11 +28,13 @@ protected:
     // 容器
     lv_obj_t* container_ = nullptr;
 
+    lv_obj_t* content_ = nullptr;
+    lv_obj_t* text_label_ = nullptr;
+
     // 弹出
     lv_obj_t* low_battery_popup_ = nullptr;
     lv_obj_t* low_battery_label_ = nullptr;
     
-    LvglWindow* window_ = nullptr;
     LvglStatusBar* statusbar_ = nullptr;
 
     std::chrono::system_clock::time_point last_status_update_time_;
@@ -47,14 +48,10 @@ public:
     virtual void OnInit() override;
     virtual void Rotate(uint8_t rotation) override;
     
-    void SetWindow(LvglWindow* window);
-    virtual LvglWindow* GetWindow() override { return window_; }
-
     // override
     virtual void SetStatus(const std::string& status) override;
     virtual void SetText(const std::string& text) override;
     virtual void UpdateStatusBar(bool update_all = false) override;
-    virtual void ShowNotification(const std::string &notification, int duration_ms = 3000) override;
     virtual void Sleep() override { }
    
     // Add theme switching function

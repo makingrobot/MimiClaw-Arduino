@@ -24,9 +24,7 @@
 #include "../sys/time.h"
 #include "../lang/lang_zh_cn.h"
 
-#include "lvgl_window.h"
 #include "lvgl_statusbar.h"
-#include "lvgl_text_window.h"
 
 #define TAG "LvglSimpleDisplay"
 
@@ -49,11 +47,18 @@ LvglSimpleDisplay::LvglSimpleDisplay(DispDriver* driver, DisplayFonts fonts)
 
 LvglSimpleDisplay::~LvglSimpleDisplay() {
 
-    window_ = nullptr;
     statusbar_ = nullptr;
 
     if (container_ != nullptr) {
         lv_obj_del(container_);
+    }
+
+    if (content_ != nullptr) {
+        lv_obj_del(content_);
+    }
+   
+    if (text_label_ != nullptr) {
+        lv_obj_del(text_label_);
     }
 
     if( low_battery_popup_ != nullptr ) {
@@ -69,20 +74,10 @@ void LvglSimpleDisplay::OnInit() {
     
     SetupUI();
 
-    if (window_ == nullptr) {
-        window_ = new LvglTextWindow();
-    }
-
-    window_->SetupUI(container_, current_theme_, fonts_);    
-
 }
 
 void LvglSimpleDisplay::Rotate(uint8_t rotation) {
 
-}
-
-void LvglSimpleDisplay::SetWindow(LvglWindow* window) {
-    window_ = window;
 }
 
 void LvglSimpleDisplay::SetupUI() {
@@ -118,6 +113,26 @@ void LvglSimpleDisplay::SetupUI() {
     lv_obj_set_style_text_color(low_battery_label_, lv_color_white(), 0);
     lv_obj_center(low_battery_label_);
     lv_obj_add_flag(low_battery_popup_, LV_OBJ_FLAG_HIDDEN);
+
+    /* 内容区域 */
+    content_ = lv_obj_create(container_);
+    lv_obj_set_scrollbar_mode(content_, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_set_style_radius(content_, 0, 0);
+    lv_obj_set_width(content_, LV_HOR_RES);
+    lv_obj_set_flex_grow(content_, 1);
+    lv_obj_set_style_pad_all(content_, 5, 0);
+    lv_obj_set_style_bg_color(content_, current_theme_.background, 0);
+    lv_obj_set_style_border_color(content_, current_theme_.border, 0); // Border color for content
+
+    lv_obj_set_flex_flow(content_, LV_FLEX_FLOW_COLUMN); // 垂直布局（从上到下）
+    lv_obj_set_flex_align(content_, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_SPACE_EVENLY); // 子对象居中对齐，等距分布
+
+    text_label_ = lv_label_create(content_);
+    lv_label_set_text(text_label_, "Hello world!");
+    lv_obj_set_width(text_label_, LV_HOR_RES * 0.9); // 限制宽度为屏幕宽度的 90%
+    lv_label_set_long_mode(text_label_, LV_LABEL_LONG_WRAP); // 设置为自动换行模式
+    lv_obj_set_style_text_align(text_label_, LV_TEXT_ALIGN_CENTER, 0); // 设置文本居中对齐
+    lv_obj_set_style_text_color(text_label_, current_theme_.text, 0);
 
     /* 状态栏 */
     if (statusbar_!=nullptr) {
@@ -156,14 +171,22 @@ void LvglSimpleDisplay::SetTheme(const std::string& theme_name) {
         lv_obj_set_style_bg_color(low_battery_popup_, current_theme_.low_battery, 0);
     }
 
+    // Update content area colors
+    if (content_ != nullptr) {
+        lv_obj_set_style_bg_color(content_, current_theme_.background, 0);
+        lv_obj_set_style_border_color(content_, current_theme_.border, 0);
+        lv_obj_set_style_text_color(text_label_, current_theme_.text, 0);
+    }
+    
+    if (text_label_!=nullptr) {
+        lv_obj_set_style_text_color(text_label_, current_theme_.text, 0);
+    }
+
     // Update status bar colors
     if (statusbar_ != nullptr) {
         statusbar_->SetTheme(current_theme_);
     }
     
-    if (window_ != nullptr) {
-        window_->SetTheme(current_theme_);
-    }
 }
 
 void LvglSimpleDisplay::SetStatus(const std::string& status) {
@@ -176,20 +199,14 @@ void LvglSimpleDisplay::SetStatus(const std::string& status) {
 }
 
 void LvglSimpleDisplay::SetText(const std::string& text) {
-    if (window_!=nullptr) {
-        DisplayLockGuard lock(this);
-        window_->SetText(1, text);
+    DisplayLockGuard lock(this);
+    if (text_label_ == nullptr) {
+        Log::Warn(TAG, "text label not setup.");
+        return;
+    }
+    lv_label_set_text(text_label_, text.c_str());
         
-        last_status_update_time_ = std::chrono::system_clock::now();
-    }
-}
-
-void LvglSimpleDisplay::ShowNotification(const std::string &notification, int duration_ms) { 
-
-    if (statusbar_!=nullptr) {
-        DisplayLockGuard lock(this);
-        statusbar_->ShowNotification(notification, duration_ms);
-    }
+    last_status_update_time_ = std::chrono::system_clock::now();
 }
 
 void LvglSimpleDisplay::UpdateStatusBar(bool update_all) {
