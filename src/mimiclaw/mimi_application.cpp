@@ -229,6 +229,13 @@ bool MimiApplication::Start() {
         return false;
     }
 
+    if (ota.CheckNewVersion()) { //有新版本
+        if (ota.Upgrade()) { //升级成功
+            delay(1000);
+            ESP.restart();
+        }
+    }
+
     if (!_onboard.start(true)) {
         showMessageOnDisplay("system", "Onboard 服务启动失败");
         MIMI_LOGW(TAG, "Onboard start failed");
