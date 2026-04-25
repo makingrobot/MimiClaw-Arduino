@@ -35,6 +35,7 @@
 
 使用GUI界面依赖库：
 
+- **GFX Library For Arduino**
 - **lvgl** v9.0 
 - **FT6336** 
 
@@ -99,4 +100,3 @@ MimiClaw需要文件系统来存储一些信息，数据结构如下：
 
 
 ## 通道
-
