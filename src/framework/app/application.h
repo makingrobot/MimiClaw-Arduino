@@ -13,7 +13,6 @@
 #include <deque>
 
 #include "config.h"
-#include "../ota/ota.h"
 #include "../sys/timer.h"
 #include "../sys/mutex.h"
 #include "../sys/frt_task.h"
