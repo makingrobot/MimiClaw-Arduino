@@ -11,8 +11,8 @@ bool Ota::CheckNewVersion() {
     Application& app = Application::GetInstance();
 
     char buf[128] = {0};
-    snprintf("%s/device/checkversion?vendorid=%s&productid=%s&version=%s",
-        YUNLC_API_URL, VENDOR_ID, PRODUCT_ID, app.GetAppVersion().c_str());
+    snprintf("%s/product/checkversion?model=%s&version=%s",
+        YUNLC_API_BASE, PRODUCT_MODEL, app.GetAppVersion().c_str());
     String url = String(buf);
 
     HTTPClient http;

@@ -15,14 +15,13 @@
  * 若只对某个开发板要定制选项，请在开发板文件夹内使用 app_config_ext.h 来覆盖选项。
  */
 
-#define YUNLC_API_URL                       "https://api.yunlc.com.cn"
+#define YUNLC_API_BASE                       "https://api.yunlc.com.cn"
 
-#define VENDOR_ID                           "ven-123456" //厂商ID
-#ifndef PRODUCT_ID
-#define PRODUCT_ID                          "" //产品ID
+#ifndef PRODUCT_MODEL
+#define PRODUCT_MODEL                       "" //产品型号
 #endif
-#ifndef PRODUCT_ACCESS_TOKEN
-#define PRODUCT_ACCESS_TOKEN                "" //产品AccessToken
+#ifndef PRODUCT_TOKEN
+#define PRODUCT_TOKEN                       "" //产品Token
 #endif
 
 // 定时器，默认使用FreeRTOS定时器
