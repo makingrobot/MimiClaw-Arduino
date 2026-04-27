@@ -229,8 +229,17 @@ bool MimiApplication::Start() {
         return false;
     }
 
-    if (ota.CheckNewVersion()) { //有新版本
-        if (ota.Upgrade()) { //升级成功
+    showMessageOnDisplay("system", String("WiFi connected: ") + _wifi.getIP());
+
+    showMessageOnDisplay("system", "Check new version...");
+    
+    if (_ota.CheckNewVersion()) { //有新版本
+        char buf[64] = {0};
+        snprintf(buf, 63, "Found new version %s, Upgrading...", _ota.new_version());
+        showMessageOnDisplay("system", String(buf));
+        if (_ota.Upgrade()) { //升级成功
+            showMessageOnDisplay("system", "Upgrade successfully, Restart...");
+            MIMI_LOGI(TAG, "Upgrade successfully, Restart...");
             delay(1000);
             ESP.restart();
         }

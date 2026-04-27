@@ -42,9 +42,6 @@ Application::Application() {
         ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
-
-    mutex_ = new StdMutex();
-    event_group_ = new FrtEventGroup("main");
 }
 
 Application::~Application() {
@@ -64,6 +61,9 @@ Application::~Application() {
  */
 void Application::Init() {
     Log::Info(TAG, "Initialize...");
+
+    mutex_ = new StdMutex();
+    event_group_ = new FrtEventGroup("main");
         
 #if CONFIG_USE_DISPLAY==1
     // 显示模块初始化

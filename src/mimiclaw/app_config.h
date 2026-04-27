@@ -15,7 +15,9 @@
  * 若只对某个开发板要定制选项，请在开发板文件夹内使用 app_config_ext.h 来覆盖选项。
  */
 
-#define YUNLC_API_BASE                       "https://api.yunlc.com.cn"
+#define APP_VERSION                          "1.0.0"
+
+#define YUNLC_API_BASE                       "http://api.yunlc.com.cn"
 
 #ifndef PRODUCT_MODEL
 #define PRODUCT_MODEL                       "" //产品型号

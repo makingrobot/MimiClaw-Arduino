@@ -43,8 +43,8 @@ std::string SystemInfo::GetMacAddress() {
 #else
     esp_read_mac(mac, ESP_MAC_WIFI_STA);
 #endif
-    char mac_str[18];
-    snprintf(mac_str, sizeof(mac_str), "%02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    char mac_str[18] = {0};
+    snprintf(mac_str, sizeof(mac_str)-1, "%02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
     return std::string(mac_str);
 }
 
@@ -55,9 +55,19 @@ std::string SystemInfo::GetMacAddress2() {
 #else
     esp_read_mac(mac, ESP_MAC_WIFI_STA);
 #endif
-    char mac_str[13];
-    snprintf(mac_str, sizeof(mac_str), "%02x%02x%02x%02x%02x%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    char mac_str[13] = {0};
+    snprintf(mac_str, sizeof(mac_str)-1, "%02x%02x%02x%02x%02x%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
     return std::string(mac_str);
+}
+
+std::string SystemInfo::GetChipId() {
+    // 获取芯片的唯一ID
+    uint8_t chip_id[6];
+    esp_efuse_mac_get_default(chip_id);
+
+    char id_str[13] = {0};
+    snprintf(id_str, sizeof(id_str)-1, "%02x%02x%02x%02x%02x%02x", chip_id[0], chip_id[1], chip_id[2], chip_id[3], chip_id[4], chip_id[5]);
+    return std::string(id_str);
 }
 
 std::string SystemInfo::GetChipModelName() {

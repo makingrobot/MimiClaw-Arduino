@@ -39,6 +39,15 @@ Esp32S3Board::Esp32S3Board() : MimiBoard() {
     Log::Info(TAG, "initial led.");
     led_ = new Ws2812Led(BUILTIN_LED_PIN, 1);
 
+    InitFileSystem();
+    InitDisplay();
+    InitAudioCodec();
+
+    Log::Info( TAG, "===== Board config completed. =====");
+}
+
+void Esp32S3Board::InitAudioCodec() {
+#if CONFIG_USE_AUDIO==1
     // Initialize I2C peripheral
     Log::Info(TAG, "initial i2c.");
     i2c_master_bus_config_t i2c_bus_cfg = {
@@ -55,15 +64,6 @@ Esp32S3Board::Esp32S3Board() : MimiBoard() {
     };
     ESP_ERROR_CHECK(i2c_new_master_bus(&i2c_bus_cfg, &i2c_bus_));
 
-    InitFileSystem();
-    InitDisplay();
-    InitAudioCodec();
-
-    Log::Info( TAG, "===== Board config completed. =====");
-}
-
-void Esp32S3Board::InitAudioCodec() {
-#if CONFIG_USE_AUDIO==1
     Log::Info(TAG, "initial audio codec es8311.");
     /* 使用ES8311 驱动 */
     audio_codec_ = new AudioEs8311Codec(

@@ -35,6 +35,7 @@
 #include "mimi_websearch.h"
 #include "mimi_feishu.h"
 #include "src/framework/app/application.h"
+#include "src/framework/sys/ota.h"
 
 class MimiApplication : public Application {
 public:
@@ -125,6 +126,8 @@ private:
     MimiTelegram _telegram;
     MimiFeishu _feishu;
     MimiLocal _local;
+    
+    Ota _ota;
     
     bool _started;
     

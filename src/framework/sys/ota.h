@@ -14,7 +14,11 @@ public:
     bool CheckNewVersion();
     bool Upgrade();
 
+    const String& new_version() const { return new_version_; }
+    void SetMD5Verify(bool md5_verify) { md5_verify_ = md5_verify; }
+
 private:
+    bool md5_verify_ = false; // MD5校验
     String new_version_;
     String file_url_;
     uint32_t file_size_;
