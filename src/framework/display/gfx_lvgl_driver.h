@@ -32,7 +32,7 @@ public:
     void Loop();
 
 private:
-    Arduino_GFX* gfx_;
+    Arduino_GFX* gfx_ = nullptr;
 
     lv_display_t *display_ = nullptr;
     lv_color_t *disp_buf_ = nullptr;
@@ -43,4 +43,4 @@ private:
 
 #endif //_GFX_LVGL_DRIVER_H
 
-#endif //CONFIG_USE_GFX_LIBRARY
+#endif
