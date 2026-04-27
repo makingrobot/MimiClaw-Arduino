@@ -40,17 +40,17 @@ LvglStatusBar::~LvglStatusBar() {
 void LvglStatusBar::SetupUI(lv_obj_t* container, const ThemeColors& theme, const DisplayFonts& fonts) {
     /* Status bar */
     status_bar_ = lv_obj_create(container);
-    lv_obj_set_size(status_bar_, LV_HOR_RES, fonts.text_font->line_height);
+    lv_obj_set_size(status_bar_, LV_HOR_RES, fonts.text_font->line_height + 8);  //+Pad
     lv_obj_set_style_radius(status_bar_, 0, 0);
     lv_obj_set_style_bg_color(status_bar_, theme.background, 0);
     lv_obj_set_style_text_color(status_bar_, theme.text, 0);
+    lv_obj_set_style_pad_all(status_bar_, 4, 0);
+    //lv_obj_set_style_pad_left(status_bar_, 2, 0);
+    //lv_obj_set_style_pad_right(status_bar_, 2, 0);
     
     lv_obj_set_flex_flow(status_bar_, LV_FLEX_FLOW_ROW);
-    lv_obj_set_style_pad_all(status_bar_, 0, 0);
     lv_obj_set_style_border_width(status_bar_, 0, 0);
     lv_obj_set_style_pad_column(status_bar_, 0, 0);
-    lv_obj_set_style_pad_left(status_bar_, 2, 0);
-    lv_obj_set_style_pad_right(status_bar_, 2, 0);
 
     status_label_ = lv_label_create(status_bar_);
     //lv_obj_set_flex_grow(status_label_, 1);

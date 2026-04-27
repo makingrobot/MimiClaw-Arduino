@@ -111,7 +111,7 @@ void LvglLogDisplay::SetupUI() {
     lv_obj_set_style_radius(content_, 0, 0);
     lv_obj_set_width(content_, LV_HOR_RES);
     lv_obj_set_flex_grow(content_, 1);
-    lv_obj_set_style_pad_all(content_, 10, 0);
+    lv_obj_set_style_pad_all(content_, 4, 0);
     lv_obj_set_style_bg_color(content_, current_theme_.chat_background, 0); // Background for chat area
     lv_obj_set_style_border_color(content_, current_theme_.border, 0); // Border color for chat area
 
@@ -122,7 +122,7 @@ void LvglLogDisplay::SetupUI() {
     // Create a flex container for chat messages
     lv_obj_set_flex_flow(content_, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(content_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
-    lv_obj_set_style_pad_row(content_, 10, 0); // Space between messages
+    lv_obj_set_style_pad_row(content_, 4, 0); // Space between messages
 
     // We'll create chat messages dynamically in SetChatMessage
     message_label_ = nullptr;

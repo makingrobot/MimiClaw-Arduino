@@ -17,7 +17,6 @@
 #if CONFIG_USE_DISPLAY==1 && CONFIG_USE_LVGL==1
 #include "src/framework/display/gfx_lvgl_driver.h"
 #include "lvgl_log_display.h"
-#include "ft6336_touch.h"
 #endif
 
 #if CONFIG_USE_AUDIO==1
@@ -107,12 +106,10 @@ void Esp32S3Board::InitDisplay() {
     } 
     gfx_graphics_->invertDisplay(DISPLAY_INVERT_COLOR);
     
-    Ft6336Touch *touch = new Ft6336Touch(TOUCH_SDA_PIN, TOUCH_SCL_PIN, TOUCH_INT_PIN, TOUCH_RST_PIN);
-
     Log::Info( TAG, "Create Lvgl display." );
-    disp_driver_ = new GfxLvglDriver(gfx_graphics_, 320, 240, touch);
+    disp_driver_ = new GfxLvglDriver(gfx_graphics_, 320, 240);
     display_ = new LvglLogDisplay(disp_driver_, {
-                                    .text_font = &font_puhui_20_4,
+                                    .text_font = &font_puhui_16_4,
                                     .icon_font = &font_awesome_16_4,
                                     .emoji_font = font_emoji_32_init(),
                                 });

@@ -79,9 +79,14 @@ const ThemeColors LIGHT_THEME = {
     .low_battery = LIGHT_LOW_BATTERY_COLOR
 };
 
+#ifndef LV_FONT_PUHUI
 LV_FONT_DECLARE(font_puhui_20_4);
+#endif
+
+#ifndef LV_FONT_AWESOME
 LV_FONT_DECLARE(font_awesome_16_4);
 LV_FONT_DECLARE(font_awesome_30_4);
+#endif
 
 #endif //LVGL_STYLE_H
 

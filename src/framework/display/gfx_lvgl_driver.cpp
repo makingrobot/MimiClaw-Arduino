@@ -39,20 +39,10 @@ void _flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map)
     g_driver->Flush(disp, area, px_map);
 }
 
-/*Read the touchpad*/
-void _touchpad_read(lv_indev_t *indev, lv_indev_data_t *data)
-{
-    g_driver->TouchRead(indev, data);
-}
-
 void GfxLvglDriver::Init() {
     Log::Info(TAG, "gfx lvgl driver init.");
     
     gfx_->fillScreen(BLACK);
-
-    if (touch_) {
-        touch_->Init(width_, height_, 1);
-    }
 
     lv_init();
 
@@ -99,13 +89,6 @@ void GfxLvglDriver::Init() {
     lv_display_set_buffers(display_, disp_buf_, NULL, buf_size * 2, LV_DISPLAY_RENDER_MODE_PARTIAL);
 #endif
 
-    if (touch_) {
-        /*Initialize the (dummy) input device driver*/
-        indev_ = lv_indev_create();
-        lv_indev_set_type(indev_, LV_INDEV_TYPE_POINTER); /*Touchpad should have POINTER type*/
-        lv_indev_set_read_cb(indev_, _touchpad_read);
-    }
-
     lvgl_task_ = new FrtTask("lvgl_task");
     lvgl_task_->OnLoop([this](){
         Loop();
@@ -124,28 +107,6 @@ void GfxLvglDriver::Flush(lv_display_t *disp, const lv_area_t *area, uint8_t *px
 
     /*Call it to tell LVGL you are ready*/
     lv_disp_flush_ready(disp);
-}
-
-void GfxLvglDriver::TouchRead(lv_indev_t *indev, lv_indev_data_t *data) {
-    if (touch_->HasSignal())
-    {
-        if (touch_->IsTouched())
-        {
-            data->state = LV_INDEV_STATE_PRESSED;
-
-            /*Set the coordinates*/
-            data->point.x = touch_->last_x();
-            data->point.y = touch_->last_y();
-        }
-        else if (touch_->IsReleased())
-        {
-            data->state = LV_INDEV_STATE_RELEASED;
-        }
-    }
-    else
-    {
-        data->state = LV_INDEV_STATE_RELEASED;
-    }
 }
 
 void GfxLvglDriver::Loop() {

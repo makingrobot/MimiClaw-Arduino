@@ -14,8 +14,12 @@
 #include <string>
 #include <chrono>
 #include "src/framework/display/lvgl_display.h"
-#include "src/framework/display/lvgl_style.h"
 #include "src/framework/display/lvgl_statusbar.h"
+
+#define LV_FONT_PUHUI  //覆盖style中定义的字体
+LV_FONT_DECLARE(font_puhui_16_4);
+
+#include "src/framework/display/lvgl_style.h"
 
 class LvglLogDisplay : public LvglDisplay {
 public:

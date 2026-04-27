@@ -15,7 +15,6 @@
 #include <Arduino_GFX_Library.h>
 #include <lvgl.h>
 #include "../sys/frt_task.h"
-#include "touch.h"
 
 class GfxLvglDriver : public DispDriver {
 public:
@@ -34,7 +33,6 @@ public:
 
 private:
     Arduino_GFX* gfx_;
-    Touch* touch_;
 
     lv_display_t *display_ = nullptr;
     lv_color_t *disp_buf_ = nullptr;
