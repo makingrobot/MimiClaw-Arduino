@@ -22,6 +22,12 @@ bool MimiChannel::onMessage(const char* chat_id, const char* text) {
     return false;
 }
 
+/******************* MimiLocal ************************/
+
+MimiLocal::MimiLocal() {
+
+}
+
 bool MimiLocal::sendMessage(const char* chat_id, const char* text)
 {
     MIMI_LOGI(TAG, "System message [%s]: %.128s", chat_id, text);

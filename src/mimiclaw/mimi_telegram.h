@@ -26,7 +26,7 @@ public:
 
     virtual bool sendMessage(const char* chat_id, const char* text) override;
 
-    virtual String name() const override { MIMI_CHAN_TELEGRAM; }
+    virtual std::string name() const override { return MIMI_CHAN_TELEGRAM; }
 
 private:
     MimiPrefs* _prefs = nullptr;

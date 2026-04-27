@@ -31,7 +31,7 @@ public:
     void setWsConnected(bool connected) { _ws_connected = connected; }
     void handleWsFrame(const uint8_t *buf, size_t len);
 
-    virtual String name() const override { MIMI_CHAN_FEISHU; }
+    virtual std::string name() const override { return MIMI_CHAN_FEISHU; }
 
 private:
     String _appId;

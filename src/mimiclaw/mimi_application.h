@@ -40,7 +40,7 @@ class MimiApplication : public Application {
 public:
     MimiApplication();
     
-    virtual const std::string& GetAppVersion() const override { return "1.0.0"; }
+    virtual std::string GetAppVersion() const override { return "1.0.0"; }
 
     virtual bool OnInit() override;
     virtual void OnLoop() override;
@@ -136,7 +136,7 @@ private:
     // 安装技能
     void installSkills();
 
-    std::map<String, MimiChannel*> _channel_map;
+    std::map<std::string, MimiChannel*> _channel_map;
 
     TaskHandle_t _outboundTaskHandle;
 };

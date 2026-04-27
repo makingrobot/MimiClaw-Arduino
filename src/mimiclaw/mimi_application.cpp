@@ -25,7 +25,7 @@ MimiApplication::MimiApplication() : _started(false), _outboundTaskHandle(nullpt
 
 bool MimiApplication::OnInit() {
     char buf[32] = {0};
-    snprintf(buf, 31, "MimiClaw AI Agent (%s)", GetAppVersion());
+    snprintf(buf, 31, "MimiClaw AI Agent (%s)", GetAppVersion().c_str());
     MIMI_LOGI(TAG, buf);
 
 #if CONFIG_USE_DISPLAY==1
@@ -363,7 +363,7 @@ void MimiApplication::installSkills() {
 }
 
 MimiChannel* MimiApplication::findChannel(const char* name) {
-    String key = String(name);
+    std::string key = std::string(name);
     auto it = _channel_map.find(key);
     return it != _channel_map.end() ? it->second : nullptr; 
 }

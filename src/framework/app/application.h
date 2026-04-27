@@ -79,7 +79,7 @@ public:
 
     const std::string& GetLastErrorMessage() const { return last_error_message_; }
 
-    virtual const std::string& GetAppVersion() const = 0;
+    virtual std::string GetAppVersion() const = 0;
 
 #if CONFIG_CLOCK_ENABLE==1
     virtual void OnClockTimer();

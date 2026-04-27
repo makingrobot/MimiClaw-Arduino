@@ -7,12 +7,13 @@
 #define MIMI_CHANNEL_H
 
 #include <Arduino.h>
+#include <string>
 #include "mimi_config.h"
 #include "mimi_bus.h"
 
 class MimiChannel {
 public:
-    virtual String name() const=0;
+    virtual std::string name() const=0;
     virtual bool sendMessage(const char* chat_id, const char* text)=0;
 
     virtual bool onMessage(const char* chat_id, const char* text);
@@ -24,7 +25,8 @@ protected:
 
 class MimiLocal : public MimiChannel {
 public:
-    virtual String name() const override { return MIMI_CHAN_SYSTEM; }
+    MimiLocal();
+    virtual std::string name() const override { return MIMI_CHAN_SYSTEM; }
     virtual bool sendMessage(const char* chat_id, const char* text) override;
 };
 
