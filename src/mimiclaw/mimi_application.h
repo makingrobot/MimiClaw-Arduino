@@ -40,7 +40,6 @@ class MimiApplication : public Application {
 public:
     MimiApplication();
     
-    virtual const std::string& GetAppName() const override { return "MimiClaw-Arduino"; };
     virtual const std::string& GetAppVersion() const override { return "1.0.0"; }
 
     virtual bool OnInit() override;

@@ -101,11 +101,11 @@ void LvglStatusBar::SetTheme(const ThemeColors& theme) {
     
 }
 
-void LvglStatusBar::ShowNotification(const String& notification, int duration_ms) {
+void LvglStatusBar::ShowNotification(const std::string& notification, int duration_ms) {
 
 }
 
-void LvglStatusBar::SetStatus(const String& status) {
+void LvglStatusBar::SetStatus(const std::string& status) {
     if (status_label_ == nullptr) {
         return;
     }

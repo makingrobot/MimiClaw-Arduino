@@ -19,12 +19,14 @@ void* create_application() {
     return new MimiApplication();
 }
 
-MimiApplication::MimiApplication() : _started(false), _outboundTaskHandle(nullptr) {}
+MimiApplication::MimiApplication() : _started(false), _outboundTaskHandle(nullptr) {
+    
+}
 
 bool MimiApplication::OnInit() {
-    MIMI_LOGI(TAG, "========================================");
-    MIMI_LOGI(TAG, "  MimiClaw - ESP32-S3 AI Agent");
-    MIMI_LOGI(TAG, "========================================");
+    char buf[32] = {0};
+    snprintf(buf, 31, "MimiClaw AI Agent (%s)", GetAppVersion());
+    MIMI_LOGI(TAG, buf);
 
 #if CONFIG_USE_DISPLAY==1
     LvglDisplay* display =  (LvglDisplay*)(Board::GetInstance().GetDisplay());

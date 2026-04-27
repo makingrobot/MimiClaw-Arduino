@@ -11,7 +11,7 @@
 #define LVGL_STATUSBAR_H
 
 #include <lvgl.h>
-#include <Arduino.h>
+#include <string>
 #include "lvgl_style.h"
 #include "../fonts/font_emoji.h"
 #include "../sys/timer.h"
@@ -38,15 +38,15 @@ public:
 
     void SetupUI(lv_obj_t* container, const ThemeColors& theme, const DisplayFonts& fonts);
     
-    void ShowNotification(const String& notification, int duration_ms = 3000);
-    void SetStatus(const String& status);
+    void ShowNotification(const std::string& notification, int duration_ms = 3000);
+    void SetStatus(const std::string& status);
     void Update(bool update_all = false);
    
     virtual void SetTheme(const ThemeColors& theme);
 
 private:
     const char* GetWifiIcon();
-    String status_;
+    std::string status_;
 };
 
 #endif // LVGL_STATUSBAR_H

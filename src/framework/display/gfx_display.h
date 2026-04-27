@@ -20,8 +20,8 @@ public:
     void Init() override;
     void Rotate(uint8_t rotation) override;
     
-    void SetStatus(const String& status) override;
-    void SetText(const String& text) override;
+    void SetStatus(const std::string& status) override;
+    void SetText(const std::string& text) override;
     void UpdateStatusBar(bool update_all = false) override { }
     void Sleep() override { }
    

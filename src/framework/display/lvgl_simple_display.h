@@ -22,7 +22,7 @@
 
 class LvglSimpleDisplay : public LvglDisplay {
 protected:
-    String current_theme_name_;
+    std::string current_theme_name_;
     ThemeColors current_theme_;
 
     // 容器
@@ -49,14 +49,14 @@ public:
     virtual void Rotate(uint8_t rotation) override;
     
     // override
-    virtual void SetStatus(const String& status) override;
-    virtual void SetText(const String& text) override;
+    virtual void SetStatus(const std::string& status) override;
+    virtual void SetText(const std::string& text) override;
     virtual void UpdateStatusBar(bool update_all = false) override;
     virtual void Sleep() override { }
    
     // Add theme switching function
-    virtual void SetTheme(const String& theme_name);
-    virtual String GetTheme() { return current_theme_name_; }
+    virtual void SetTheme(const std::string& theme_name);
+    virtual std::string GetTheme() { return current_theme_name_; }
 
 };
 

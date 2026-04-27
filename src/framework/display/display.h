@@ -7,7 +7,7 @@
 #ifndef _DISPLAY_H
 #define _DISPLAY_H
 
-#include <Arduino.h>
+#include <string>
 #include <chrono>
 #include <string>
 #include "config.h"
@@ -24,8 +24,8 @@ public:
      */
     virtual void Rotate(uint8_t rotation) = 0;
 
-    virtual void SetStatus(const String& status) = 0;
-    virtual void SetText(const String& text) = 0;
+    virtual void SetStatus(const std::string& status) = 0;
+    virtual void SetText(const std::string& text) = 0;
     virtual void UpdateStatusBar(bool update_all = false) = 0;
     virtual void Sleep() = 0;
 
@@ -63,8 +63,8 @@ class NoDisplay : public Display {
 public:
     void Init() override { }
     void Rotate(uint8_t rotation) override { }
-    void SetStatus(const String& status) override { }
-    void SetText(const String& text) override { }
+    void SetStatus(const std::string& status) override { }
+    void SetText(const std::string& text) override { }
     void UpdateStatusBar(bool update_all = false) override { }
     void Sleep() override { }
 

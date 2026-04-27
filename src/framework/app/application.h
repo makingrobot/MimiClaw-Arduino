@@ -79,7 +79,6 @@ public:
 
     const std::string& GetLastErrorMessage() const { return last_error_message_; }
 
-    virtual const std::string& GetAppName() const = 0;
     virtual const std::string& GetAppVersion() const = 0;
 
 #if CONFIG_CLOCK_ENABLE==1
