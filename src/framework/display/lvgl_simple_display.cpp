@@ -35,7 +35,7 @@ LvglSimpleDisplay::LvglSimpleDisplay(DispDriver* driver, DisplayFonts fonts)
 
     // Load theme from settings
     Settings settings("display", false);
-    current_theme_name_ = settings.GetString("theme", "dark");
+    current_theme_name_ = settings.GetString("theme", "dark").c_str();
 
     // Update the theme
     if (current_theme_name_ == "dark") {
@@ -140,7 +140,7 @@ void LvglSimpleDisplay::SetupUI() {
     }
 }
 
-void LvglSimpleDisplay::SetTheme(const std::string& theme_name) {
+void LvglSimpleDisplay::SetTheme(const String& theme_name) {
     DisplayLockGuard lock(this);
     
     if (theme_name == "dark" || theme_name == "DARK") {
@@ -189,7 +189,7 @@ void LvglSimpleDisplay::SetTheme(const std::string& theme_name) {
     
 }
 
-void LvglSimpleDisplay::SetStatus(const std::string& status) {
+void LvglSimpleDisplay::SetStatus(const String& status) {
     if (statusbar_!=nullptr) {
         DisplayLockGuard lock(this);
         statusbar_->SetStatus(status);
@@ -198,7 +198,7 @@ void LvglSimpleDisplay::SetStatus(const std::string& status) {
     }
 }
 
-void LvglSimpleDisplay::SetText(const std::string& text) {
+void LvglSimpleDisplay::SetText(const String& text) {
     DisplayLockGuard lock(this);
     if (text_label_ == nullptr) {
         Log::Warn(TAG, "text label not setup.");

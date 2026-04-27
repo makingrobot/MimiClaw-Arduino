@@ -18,7 +18,7 @@
 
 class GfxLvglDriver : public DispDriver {
 public:
-    GfxLvglDriver(Arduino_GFX* gfx, int width, int height, Touch* touch=nullptr);
+    GfxLvglDriver(Arduino_GFX* gfx, int width, int height);
 
     virtual ~GfxLvglDriver() { 
         if (display_ != nullptr) {

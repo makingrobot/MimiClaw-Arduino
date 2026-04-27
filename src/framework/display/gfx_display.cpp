@@ -39,11 +39,11 @@ void GfxDisplay::Rotate(uint8_t rotation) {
     driver_->setRotation(rotation);
 }
 
-void GfxDisplay::SetStatus(const std::string& status) {
+void GfxDisplay::SetStatus(const String& status) {
     
 }
 
-void GfxDisplay::SetText(const std::string& text) {
+void GfxDisplay::SetText(const String& text) {
     
 }
 

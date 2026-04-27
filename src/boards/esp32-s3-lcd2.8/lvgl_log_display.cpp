@@ -24,7 +24,7 @@ LvglLogDisplay::LvglLogDisplay(DispDriver* driver, DisplayFonts fonts)
 
     // Load theme from settings
     Settings settings("display", false);
-    current_theme_name_ = settings.GetString("theme", "dark");
+    current_theme_name_ = settings.GetString("theme", "dark").c_str();
 
     // Update the theme
     if (current_theme_name_ == "dark") {
@@ -129,7 +129,7 @@ void LvglLogDisplay::SetupUI() {
 
 }
 
-void LvglLogDisplay::SetTheme(const std::string& theme_name) {
+void LvglLogDisplay::SetTheme(const String& theme_name) {
     DisplayLockGuard lock(this);
     
     if (theme_name == "dark" || theme_name == "DARK") {
@@ -172,7 +172,7 @@ void LvglLogDisplay::SetTheme(const std::string& theme_name) {
     
 }
 
-void LvglLogDisplay::SetStatus(const std::string& status) {
+void LvglLogDisplay::SetStatus(const String& status) {
     if (statusbar_!=nullptr) {
         DisplayLockGuard lock(this);
         statusbar_->SetStatus(status);
@@ -187,8 +187,8 @@ void LvglLogDisplay::SetStatus(const std::string& status) {
 #define  MAX_MESSAGES 30
 #endif
 
-void LvglLogDisplay::SetText(const std::string& text) {
-    SetMessage("system", String(text.c_str()));
+void LvglLogDisplay::SetText(const String& text) {
+    SetMessage("system", text);
 }
 
 void LvglLogDisplay::SetMessage(const String& kind, const String& text) {
@@ -225,12 +225,15 @@ void LvglLogDisplay::SetMessage(const String& kind, const String& text) {
     lv_obj_set_style_border_color(msg_bubble, current_theme_.border, 0);
     lv_obj_set_style_pad_all(msg_bubble, 4, 0);
 
+    // 复制文本
+    const char *text2 = strdup(text.c_str());
+
     // Create the message text
     lv_obj_t* msg_text = lv_label_create(msg_bubble);
-    lv_label_set_text(msg_text, text.c_str());
+    lv_label_set_text(msg_text, text2);
     
     // 计算文本实际宽度
-    lv_coord_t text_width = lv_txt_get_width(text.c_str(), text.length(), fonts_.text_font, 0);
+    lv_coord_t text_width = lv_txt_get_width(text2, text.length(), fonts_.text_font, 0);
 
     // 计算气泡宽度
     lv_coord_t max_width = LV_HOR_RES * 95 / 100 - 16;  // 屏幕宽度的85%

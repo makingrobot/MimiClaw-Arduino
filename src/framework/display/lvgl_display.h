@@ -41,4 +41,4 @@ private:
 };
 
 #endif // LVGL_DISPLAY_H
-#endif // CONFIG_USE_LVGL
+#endif

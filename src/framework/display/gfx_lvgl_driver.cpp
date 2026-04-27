@@ -22,10 +22,9 @@ void _log_print_cb(lv_log_level_t level, const char *buf)
 }
 #endif
 
-GfxLvglDriver::GfxLvglDriver(Arduino_GFX* gfx, int width, int height, Touch* touch)
+GfxLvglDriver::GfxLvglDriver(Arduino_GFX* gfx, int width, int height)
         : DispDriver(width, height), gfx_(gfx) { 
     g_driver = this;
-    touch_ = touch;
 }
 
 uint32_t _millis_cb(void)
