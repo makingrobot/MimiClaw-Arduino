@@ -34,9 +34,7 @@ void MimiOnboard::webTask(void* arg) {
 bool MimiOnboard::start(bool admin) {
     if (_webserver) return true;
 
-    MIMI_LOGI(TAG, "========================================");
     MIMI_LOGI(TAG, "  Starting WiFi Configuration Portal");
-    MIMI_LOGI(TAG, "========================================");
 
     MimiApplication *app = (MimiApplication*)(&Application::GetInstance());
 
