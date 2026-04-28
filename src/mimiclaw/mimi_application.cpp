@@ -30,8 +30,8 @@ bool MimiApplication::OnInit() {
 
 #if CONFIG_USE_DISPLAY==1
     LvglDisplay* display =  (LvglDisplay*)(Board::GetInstance().GetDisplay());
-    display->SetStatus("MimiClaw AI Agent");
-    display->SetMessage("system", "Starting...");
+    display->SetStatus(buf);
+    display->SetMessage("system", "系统启动中...");
 #endif
 
     // Print memory info
@@ -168,11 +168,13 @@ bool MimiApplication::OnInit() {
     installSkills();
     
     MIMI_LOGI(TAG, "All subsystems initialized");
-    showMessageOnDisplay("system", "All subsystems initialized");
 
     // start
     bool state = Start();
-
+    if (state) {
+        showMessageOnDisplay("system", "服务已就绪, 等待对话...");
+    }
+    
     return state;
 }
 
@@ -211,6 +213,7 @@ bool MimiApplication::Start() {
     // Connect WiFi
     if (!_wifi.start()) {
         MIMI_LOGW(TAG, "WiFi start failed");
+        showMessageOnDisplay("system", "WiFi 启动失败");
         // WiFi信息缺失，启动配置
         _onboard.start();  //阻塞
         return false;
@@ -219,6 +222,7 @@ bool MimiApplication::Start() {
      // 等待连接上
     if (!_wifi.waitConnected()) { //连接不上
         MIMI_LOGW(TAG, "WiFi connection timeout");
+        showMessageOnDisplay("system", "WiFi 连接超时，请重启");
         
         // 启动配置
         _onboard.start();  //阻塞
@@ -226,12 +230,12 @@ bool MimiApplication::Start() {
     }
 
     if (!_onboard.start(true)) {
-        showMessageOnDisplay("system", "Onboard service start failed");
+        showMessageOnDisplay("system", "Onboard 服务启动失败");
         MIMI_LOGW(TAG, "Onboard start failed");
         return false;
     }
 
-    showMessageOnDisplay("system", String("WiFi connected: ") + _wifi.getIP());
+    showMessageOnDisplay("system", String("WiFi 已连接: ") + _wifi.getIP());
     MIMI_LOGI(TAG, "WiFi connected: %s", _wifi.getIP());
 
     // Start outbound dispatch first
@@ -258,7 +262,6 @@ bool MimiApplication::Start() {
     
     _started = true;
 
-    showMessageOnDisplay("system", "Services is ready, Waiting to talk...");
     MIMI_LOGI(TAG, "All services started!");
     return true;
 }
@@ -381,10 +384,19 @@ static String _get_first_lines(const String& text, uint8_t num) {
         s.trim();
         if (s != "") lines.push_back(s);
     }
+    
     String result;
-    for (const auto& s : lines) {
-        result += s + "\n";
+    uint8_t line_num = lines.size();
+    if (line_num==1) {
+        return lines.at(0);
     }
+    
+    for (uint8_t i=0; i<line_num-1; i++) {
+        if (i>0) { result += "    "; } //第二行开始缩进
+        result += lines.at(i) + "\n";
+    }
+    result += lines.at(line_num-1) + "..."; //最后一行加省略号
+
     return result;
 }
 

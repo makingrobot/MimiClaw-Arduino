@@ -29,19 +29,19 @@ public:
     virtual void OnInit() override;
     virtual void Rotate(uint8_t rotation) override;
     
-    virtual void SetStatus(const String& status) override;
-    virtual void SetText(const String& text) override;
+    virtual void SetStatus(const std::string& status) override;
+    virtual void SetText(const std::string& text) override;
     virtual void UpdateStatusBar(bool update_all = false) { }
     virtual void Sleep() { }
 
     void SetMessage(const String& kind, const String& text) override;
-    void SetTheme(const String& theme_name);
+    void SetTheme(const std::string& theme_name);
     
 private:
-    lv_obj_t* content_ = nullptr;
-    lv_obj_t* message_label_ = nullptr;
+    lv_obj_t* textarea_ = nullptr;
+    std::vector<String> lines_;
 
-    String current_theme_name_;
+    std::string current_theme_name_;
     ThemeColors current_theme_;
 
     // 容器

@@ -5,6 +5,8 @@
 #include <time.h>
 #include <esp_random.h>
 #include "arduino_json_psram.h"
+#include "mimi_channel.h"
+#include "mimi_application.h"
 
 #define TAG  "cron"
 
@@ -64,16 +66,11 @@ bool MimiCron::sanitizeDestination(CronJob* job) {
         strncpy(job->channel, MIMI_CHAN_SYSTEM, sizeof(job->channel) - 1);
         changed = true;
     }
-    if (strcmp(job->channel, MIMI_CHAN_TELEGRAM) == 0) {
+    MimiApplication *app = (MimiApplication*)(&Application::GetInstance());
+    MimiChannel *ch = app->findChannel(job->channel);
+    if (ch) {
         if (job->chat_id[0] == '\0' || strcmp(job->chat_id, "cron") == 0) {
-            MIMI_LOGW(TAG, "Cron job %s has invalid telegram chat_id, fallback to system:cron", job->id);
-            strncpy(job->channel, MIMI_CHAN_SYSTEM, sizeof(job->channel) - 1);
-            strncpy(job->chat_id, "cron", sizeof(job->chat_id) - 1);
-            changed = true;
-        }
-    } else if (strcmp(job->channel, MIMI_CHAN_FEISHU) == 0) {
-        if (job->chat_id[0] == '\0' || strcmp(job->chat_id, "cron") == 0) {
-            MIMI_LOGW(TAG, "Cron job %s has invalid feishu chat_id, fallback to system:cron", job->id);
+            MIMI_LOGW(TAG, "Cron job %s has invalid %s chat_id, fallback to system:cron", job->id, job->channel);
             strncpy(job->channel, MIMI_CHAN_SYSTEM, sizeof(job->channel) - 1);
             strncpy(job->chat_id, "cron", sizeof(job->chat_id) - 1);
             changed = true;
