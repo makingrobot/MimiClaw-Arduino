@@ -16,26 +16,27 @@ bool Ota::CheckNewVersion() {
     Application& app = Application::GetInstance();
 
     char buf[128] = {0};
-    snprintf(buf, sizeof(buf)-1, "%s/product/checkversion?model=%s&chipid=%s&&version=%s",
+    snprintf(buf, sizeof(buf)-1, "%s/product/checkversion?model=%s&chipid=%s&version=%s",
         YUNLC_API_BASE, PRODUCT_MODEL, SystemInfo::GetChipId().c_str(), app.GetAppVersion().c_str());
     String url = String(buf);
 
     HTTPClient http;
-    WiFiClientSecure* client = new WiFiClientSecure();
-    client->setInsecure(); // Use root CA bundle in production
+    //WiFiClientSecure* client = new WiFiClientSecure();
+    //client->setInsecure(); // Use root CA bundle in production
     
     int timeout = 10000;
     http.setTimeout(timeout);
     http.setConnectTimeout(timeout);
 
-    if (!http.begin(*client, url)) {
+    Log::Info(TAG, "GET %s", url.c_str());
+
+    if (!http.begin(url)) {
         Log::Error(TAG, __LINE__, "httpclient begin failure.");
-        delete client;
+        //delete client;
         return false;
     }
 
     http.addHeader("Authorization", String("Bearer ")+PRODUCT_TOKEN);
-    http.addHeader("Content-Type", "application/json; charset=utf-8");
 
     String result = "";
     uint8_t retry_count = 0;
@@ -66,26 +67,28 @@ bool Ota::CheckNewVersion() {
         return false;
     }
 
+    Log::Debug(TAG, "response: %s", result.c_str());
+
     JsonDocument doc;
-    deserializeJson(doc, result);
+    if (deserializeJson(doc, result)) {
+        Log::Error(TAG, __LINE__, "Failed to parse response, not json."); 
+        return false; /*ESP_FAIL;*/
+    }
     
     int errCode = doc["errCode"];
     if (errCode<0) {
-        // show msg.
-        const char *msg = doc["errMsg"] | "";
-        Log::Warn(TAG, "response message: %s", msg);
         return false;
     }
 
     if (errCode==0) {
         // 无新版本
         Log::Info(TAG, "No new version.");
-        return true;
+        return false;
     }
 
     if (errCode==1) {
         // 有新版本
-        new_version_ = String(doc["data"]["newVersion"]);
+        new_version_ = String(doc["data"]["version"]);
         file_url_ = String(doc["data"]["fileUrl"]);
         file_size_ = doc["data"]["fileSize"];
         file_md5_ = String(doc["data"]["fileMD5"]);
@@ -105,14 +108,14 @@ bool Ota::Upgrade() {
     Log::Info(TAG, "Found new version. Upgrading...");
 
     HTTPClient http;
-    WiFiClientSecure* client = new WiFiClientSecure();
-    client->setInsecure(); // Use root CA bundle in production
+    //WiFiClientSecure* client = new WiFiClientSecure();
+    //client->setInsecure(); // Use root CA bundle in production
     
     int timeout = 15000;
     http.setTimeout(timeout);
     http.setConnectTimeout(timeout);
 
-    if (!http.begin(*client, file_url_)) {
+    if (!http.begin(file_url_)) {
         Log::Error(TAG, __LINE__, "httpclient begin failure.");
         return "";
     }
@@ -128,6 +131,7 @@ bool Ota::Upgrade() {
 
     // 1.开始更新
     Update.begin(file_size);
+
     if (md5_verify_) {
         Update.setMD5(file_md5_.c_str());
     }
@@ -145,9 +149,12 @@ bool Ota::Upgrade() {
             int c = stream->readBytes(buff, ((size > sizeof(buff)) ? sizeof(buff) : size));
             
             Update.write(buff, c);
-
             if (len > 0) {
                 len -= c;
+            }
+
+            if (progress_listener_) {
+                progress_listener_(file_size-len, file_size);    
             }
         }
         delay(1);

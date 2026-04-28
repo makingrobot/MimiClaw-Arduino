@@ -35,6 +35,7 @@ public:
     virtual void Init() override;
     virtual void Rotate(uint8_t rotation) override;
     virtual void SetMessage(const String& kind, const String& text) { }
+    virtual void AppendMessage(const String& kind, const String& text) { }
     
 private:
 

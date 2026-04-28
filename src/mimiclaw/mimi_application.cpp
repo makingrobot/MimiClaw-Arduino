@@ -219,7 +219,7 @@ bool MimiApplication::Start() {
         return false;
     }
 
-     // 等待连接上
+     // 等待连接上, 30秒
     if (!_wifi.waitConnected()) { //连接不上
         MIMI_LOGW(TAG, "WiFi connection timeout");
         showMessageOnDisplay("system", "WiFi 连接超时，请重启");
@@ -229,30 +229,34 @@ bool MimiApplication::Start() {
         return false;
     }
 
-    showMessageOnDisplay("system", String("WiFi connected: ") + _wifi.getIP());
+    showMessageOnDisplay("system", String("WiFi 已连接，IP: ") + _wifi.getIP());
+    MIMI_LOGI(TAG, "WiFi connected: %s", _wifi.getIP());
 
-    showMessageOnDisplay("system", "Check new version...");
+    showMessageOnDisplay("system", "检查新版本...");
     
     if (_ota.CheckNewVersion()) { //有新版本
         char buf[64] = {0};
-        snprintf(buf, 63, "Found new version %s, Upgrading...", _ota.new_version());
+        snprintf(buf, 63, "发现新版本 %s, 准备升级...", _ota.new_version());
         showMessageOnDisplay("system", String(buf));
+
+        _ota.SetProgressListener([this](size_t write_size, size_t total_size){
+            static uint8_t percent = 0;
+            uint8_t curr = write_size * 10 / total_size; //0-10
+            if (curr > percent) {
+                appendMessageOnDisplay("system", ".");
+                percent = curr;
+            }
+            if (write_size == total_size) {
+                appendMessageOnDisplay("system", "\n");
+            }
+        });
         if (_ota.Upgrade()) { //升级成功
-            showMessageOnDisplay("system", "Upgrade successfully, Restart...");
+            showMessageOnDisplay("system", "升级成功, 重启中...");
             MIMI_LOGI(TAG, "Upgrade successfully, Restart...");
             delay(1000);
             ESP.restart();
         }
     }
-
-    if (!_onboard.start(true)) {
-        showMessageOnDisplay("system", "Onboard 服务启动失败");
-        MIMI_LOGW(TAG, "Onboard start failed");
-        return false;
-    }
-
-    showMessageOnDisplay("system", String("WiFi 已连接: ") + _wifi.getIP());
-    MIMI_LOGI(TAG, "WiFi connected: %s", _wifi.getIP());
 
     // Start outbound dispatch first
     BaseType_t ok = xTaskCreatePinnedToCore(
@@ -267,6 +271,11 @@ bool MimiApplication::Start() {
     if (!_agent.start()) {
         MIMI_LOGE(TAG, __LINE__, "Agent start failed");
         return false;
+    }
+
+    if (!_onboard.start(true)) {
+        showMessageOnDisplay("system", "Onboard 服务启动失败");
+        MIMI_LOGW(TAG, "Onboard start failed");
     }
 
     _feishu.start();
@@ -420,7 +429,16 @@ void MimiApplication::showMessageOnDisplay(const String& kind, const String& tex
 #if CONFIG_USE_DISPLAY==1 && CONFIG_USE_LVGL==1
     Schedule([kind, text](){  //同步到 Setup调用 线程上，且按序执行
         LvglDisplay* display =  (LvglDisplay*)(Board::GetInstance().GetDisplay());
-        display->SetMessage(kind, _get_first_lines(text, 3));
+        display->SetMessage(kind, text);
+    });
+#endif
+}
+
+void MimiApplication::appendMessageOnDisplay(const String& kind, const String& text) {
+#if CONFIG_USE_DISPLAY==1 && CONFIG_USE_LVGL==1
+    Schedule([kind, text](){  //同步到 Setup调用 线程上，且按序执行
+        LvglDisplay* display =  (LvglDisplay*)(Board::GetInstance().GetDisplay());
+        display->AppendMessage(kind, text);
     });
 #endif
 }

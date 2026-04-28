@@ -86,6 +86,7 @@ public:
     
     // 在显示器上显示文本
     void showMessageOnDisplay(const String& kind, const String& text);
+    void appendMessageOnDisplay(const String& kind, const String& text);
 
     // --- Memory ---
     MimiMemory& memory() { return _memory; }

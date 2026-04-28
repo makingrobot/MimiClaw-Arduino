@@ -34,7 +34,7 @@ void MimiOnboard::webTask(void* arg) {
 bool MimiOnboard::start(bool admin) {
     if (_webserver) return true;
 
-    MIMI_LOGI(TAG, "  Starting WiFi Configuration Portal");
+    MIMI_LOGI(TAG, "Starting WiFi Configuration Portal");
 
     MimiApplication *app = (MimiApplication*)(&Application::GetInstance());
 
@@ -91,6 +91,7 @@ bool MimiOnboard::start(bool admin) {
     }
 
     if (!admin) {
+        // 非配置模式，等待配置WiFi
         app->showMessageOnDisplay("system", "Waiting for configure WiFi...");
 
         /* Block forever — onboarding ends with esp_restart() in /save handler */

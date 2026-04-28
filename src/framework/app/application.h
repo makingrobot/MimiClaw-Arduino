@@ -34,7 +34,7 @@ public:
     Application();
     virtual ~Application();
 
-    void Schedule(callback_function_t callback);
+    void Schedule(callback_function_t callback, uint32_t timeout_ms=0);
     DeviceState* GetDeviceState() { return device_state_; }
     void Alert(const char* status, const char* message, const char* emotion);
     void Reboot();
@@ -94,15 +94,12 @@ protected:
 
     virtual void OnStateChanged();
 
-#if CONFIG_OTA_ENABLE==1
-    virtual void CheckNewVersion();
-#endif
-
     DeviceState* device_state_ = const_cast<DeviceState*>(kDeviceStateUnknown);
     std::string last_error_message_;
     FrtEventGroup *event_group_;
     EventHandler *event_handler_ = nullptr;
-    Mutex *mutex_;
+    Mutex *sched_mutex_;
+    Mutex *exec_mutex_;
     int clock_ticks_ = 0;
 
 private:

@@ -194,4 +194,18 @@ void LvglLogDisplay::SetMessage(const String& kind, const String& text) {
     lv_textarea_set_cursor_pos(textarea_, LV_TEXTAREA_CURSOR_LAST);
 }
 
+void LvglLogDisplay::AppendMessage(const String& kind, const String& text) {
+
+    if (textarea_ == nullptr) {
+        return;
+    }
+    
+    //避免出现空的消息框
+    if(text.length() == 0) return;
+    
+    DisplayLockGuard lock(this);
+    
+    lv_textarea_add_text(textarea_, text.c_str());
+}
+
 #endif // CONFIG_USE_LVGL

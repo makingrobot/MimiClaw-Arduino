@@ -35,6 +35,7 @@ public:
     virtual void Sleep() { }
 
     void SetMessage(const String& kind, const String& text) override;
+    void AppendMessage(const String& kind, const String& text) override;
     void SetTheme(const std::string& theme_name);
     
 private:

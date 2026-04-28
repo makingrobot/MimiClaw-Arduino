@@ -62,7 +62,8 @@ Application::~Application() {
 void Application::Init() {
     Log::Info(TAG, "Initialize...");
 
-    mutex_ = new StdMutex();
+    sched_mutex_ = new StdMutex();  //任务调度锁
+    exec_mutex_ = new StdMutex();  //任务执行锁
     event_group_ = new FrtEventGroup("main");
         
 #if CONFIG_USE_DISPLAY==1
@@ -154,12 +155,14 @@ void Application::ToggleWorkState() {
 }
 
 // Add a async task to MainLoop
-void Application::Schedule(callback_function_t callback) {
-    MutexGuard lock(mutex_);
+void Application::Schedule(callback_function_t callback, uint32_t timeout_ms) {
+    MutexGuard lock(sched_mutex_, timeout_ms);
     if (lock.IsLocked())
     {
         app_tasks_.push_back(std::move(callback));
         event_group_->SetBits(EventHandler::kEventScheduleTask);
+    } else {
+        Log::Warn(TAG, "Schedule task timeout.");
     }
 }
 
@@ -293,7 +296,7 @@ void Application::EventLoop() {
 
     try {
         if (bits & EventHandler::kEventScheduleTask) {
-            MutexGuard lock(mutex_);
+            MutexGuard lock(exec_mutex_, 100);
             if (lock.IsLocked())
             {
                 auto tasks = std::move(app_tasks_);
