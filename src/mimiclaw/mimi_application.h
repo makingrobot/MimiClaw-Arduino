@@ -46,6 +46,8 @@ public:
     virtual bool OnInit() override;
     virtual void OnLoop() override;
 
+    virtual bool OnPhysicalButtonEvent(const std::string& button_name, const ButtonAction action) override;
+
     /**
      * Start all services (WiFi, Telegram, Agent, Cron, etc.)
      * Call after begin() and optionally after configuring secrets.

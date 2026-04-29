@@ -443,3 +443,15 @@ void MimiApplication::appendMessageOnDisplay(const String& kind, const String& t
 #endif
 }
 
+bool MimiApplication::OnPhysicalButtonEvent(const std::string& button_name, const ButtonAction action) {
+    if (button_name == kBootButton) {
+        if (action == ButtonAction::DoubleClick) {
+            // 进入深入睡眠、
+            ESP.deepSleep(UINT64_MAX);
+            return true;
+        }
+    }
+
+    return Application::OnPhysicalButtonEvent(button_name, action);
+}
+

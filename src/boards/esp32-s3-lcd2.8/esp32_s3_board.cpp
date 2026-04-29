@@ -5,6 +5,7 @@
 #include "board_config.h"
 #include "esp32_s3_board.h"
 #include "src/framework/led/ws2812_led.h"
+#include "src/framework/board/onebutton_impl.h"
 #include <Arduino.h>
 #include <SPI.h>
 
@@ -40,10 +41,26 @@ Esp32S3Board::Esp32S3Board() : MimiBoard() {
     led_ = new Ws2812Led(BUILTIN_LED_PIN, 1);
 
     InitFileSystem();
+    InitButtons();
     InitDisplay();
     InitAudioCodec();
 
     Log::Info( TAG, "===== Board config completed. =====");
+}
+
+void Esp32S3Board::InitButtons() {
+    std::shared_ptr<Button> boot_btn = std::make_shared<OneButtonImpl>(kBootButton, BOOT_BUTTON_PIN);
+    boot_btn->BindAction(ButtonAction::DoubleClick);
+    AddButton(boot_btn);
+
+    btntick_task_ = new FrtTask("btn_tick");
+    btntick_task_->OnLoop([this](){
+        for (const auto& pair : button_map()) {
+            pair.second->Tick();
+        }
+        vTaskDelay(pdMS_TO_TICKS(10));
+    });
+    btntick_task_->Start(4096, 5);
 }
 
 void Esp32S3Board::InitAudioCodec() {

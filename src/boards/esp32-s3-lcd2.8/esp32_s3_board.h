@@ -10,6 +10,7 @@
 
 #include "src/framework/led/led.h"
 #include "src/framework/file/file_system.h"
+#include "src/framework/sys/frt_task.h"
 #include "src/mimiclaw/mimi_board.h"
 
 #if CONFIG_USE_DISPLAY==1
@@ -29,6 +30,7 @@ private:
     FileSystem *filesystem_ = nullptr;
 
     void InitFileSystem();
+    void InitButtons();
     void InitDisplay();
     void InitAudioCodec();
 
@@ -43,6 +45,8 @@ private:
 #if CONFIG_USE_AUDIO==1
     AudioCodec *audio_codec_ = nullptr;
 #endif
+
+    FrtTask *btntick_task_;
 
 public:
     Esp32S3Board();

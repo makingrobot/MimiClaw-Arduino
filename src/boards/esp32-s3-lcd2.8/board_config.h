@@ -9,6 +9,7 @@
  * 本文件主要用于配置硬件相关的设置，如引脚
  */
 
+#define BOOT_BUTTON_PIN                     GPIO_NUM_0
 #define BUILTIN_LED_PIN                     GPIO_NUM_42
 
 // I2c
